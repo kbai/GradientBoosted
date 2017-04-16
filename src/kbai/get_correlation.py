@@ -2,8 +2,6 @@ import numpy as np
 import os
 import sys
 import math
-#this code computes the correlation coefficients between two movies i and j
-#usage: python ./get_correlation.py i j
 p1 = "awk '{if($2 =="+str(sys.argv[1])+" ) print }' ./1.dta > file1"
 p2 = "awk '{if($2 =="+str(sys.argv[2])+" ) print }' ./1.dta > file2"
 
@@ -39,5 +37,5 @@ while((i < set1.shape[0]) & (j < set2.shape[0])):
     sumyy = sumyy + y*y
     sumxy = sumxy + x*y
 re = ( n*sumxy -  sumx * sumy )/math.sqrt(1e-6+sumxx*n - sumx*sumx)/math.sqrt(1e-6+sumyy*n - sumy*sumy)
-print 'number of users have seen both movies:', n
-print 'correlation coeff:', re
+print n
+print re

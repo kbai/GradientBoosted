@@ -19,7 +19,7 @@ void writedataintofile(int curr_user, vector<int>& imovie, vector<int> & itime, 
 
 	for(int i = 0 ; i < imovie.size(); i++)
 	{
-		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i] -avetime<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
+		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i]/75<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
 	}
 }
 
@@ -37,13 +37,13 @@ int main()
 	int averagetime = 0;
 	int idx = -1;
 	bool training;
-	ifstream infile("./all.dta");
-	ifstream idfile("./all.idx");
+	ifstream infile("../data/all.dta");
+	ifstream idfile("../data/all.idx");
 	ofstream outfile[5];
 	string filename;
 	for(int i = 1; i < 6; i++)
 	{
-		filename = "./" + std::to_string(i) + ".dta";
+		filename = "../data/" + std::to_string(i) + ".dta";
 		
 		outfile[i-1].open(filename);
 	}
@@ -83,6 +83,8 @@ int main()
 		counter ++;
 // calculate the total number of movie one rates in a specific day
 	}
+	writedataintofile(curr_user,imovie,itime,irating,nrating,ostreams);
+
 
 
 	
