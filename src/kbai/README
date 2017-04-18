@@ -1,2 +1,7 @@
-To compile each cpp file:
-c++[or whatever your c++ compiler is]  -std=c++11 ./filename.cpp
+To run this model , first 
+make
+Then, run the following 3 .bin file one by one:
+dividedata.bin
+get_nmovienuser.bin
+latent10.bin outputfilename
+
