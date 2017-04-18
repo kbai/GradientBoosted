@@ -47,14 +47,16 @@ struct bkmodel
 	vector<float> btu;
 	vector<vector<float>> bt;
 	float mean;
-	float lr;
-	float alpha;
-	float lambda;
+	float _lr;
+	float _alpha;
+	float _lambda;
 
 	bkmodel();
+	void half_lr(); // setting learning rate
 	float g(int iu, int im, int it);
 	void update_param_sgd(feature &a);
 };
+
 
 bkmodel::bkmodel(): uuser(NUSER,0), umovie(NMOVIE,0), bm(NMOVIE,vector<float>(NLAT,0)) // 50 latent factors
  ,bu(NUSER,0), bs(NUSER,vector<float>(NLAT,0)), btu(NUSER,0), bt(NMOVIE,vector<float>(30,0))
@@ -71,10 +73,14 @@ bkmodel::bkmodel(): uuser(NUSER,0), umovie(NMOVIE,0), bm(NMOVIE,vector<float>(NL
 	for(int &i : umovie) moviefile >>i;
 	userfile.close();
 	moviefile.close();
-	lr = 0.001;//set basic learning rate to be 0.01
-	alpha = 4.91299;
-	lambda = 0.0903385;
+	_lr = 0.01;//set basic learning rate to be 0.01
+	_alpha = 4.91299;
+	_lambda = 0.0903385;
 
+}
+void bkmodel::half_lr()
+{
+	_lr *= 0.5;
 }
 
 float bkmodel::g(int iu, int im, int it)
@@ -92,15 +98,15 @@ void bkmodel::update_param_sgd(feature &a)
 	int it = a.it;
 	int rate = a.rate;
 	float error = -g(iu,im,it) + rate ;
-	bu[iu] -= lr*(-2.0*error + 2.0*bu[iu]*(lambda + alpha/uuser[iu]));
+	bu[iu] -= _lr*(-2.0*error + 2.0*bu[iu]*(_lambda + _alpha/uuser[iu]));
 	for(int i = 0; i < NLAT; i++)
 	{
-		bm[im][i] -= lr*(-2.0*error*bs[iu][i] + 2.0*bm[im][i]*(0.00234879 + 0.0610418/umovie[im])) ;
-		bs[iu][i] -= lr*(-2.0*error*bm[im][i] + 2.0*bs[iu][i] *(0.0753211 + 3.11288/uuser[iu]));
+		bm[im][i] -= _lr*(-2.0*error*bs[iu][i] + 2.0*bm[im][i]*(0.00234879 + 0.0610418/umovie[im])) ;
+		bs[iu][i] -= _lr*(-2.0*error*bm[im][i] + 2.0*bs[iu][i] *(0.0753211 + 3.11288/uuser[iu]));
 	}
-	bt[im][it] -= lr*(-2.0*error*btu[iu])+ bt[im][it] * 0.0001;
-	btu[iu] -= lr*(-2.0*error*bt[im][it]) + btu[iu] * 0.001;
-	mean -= lr*(-2.0*error)/100;
+	bt[im][it] -= _lr*(-2.0*error*btu[iu])+ bt[im][it] * 0.0001;
+	btu[iu] -= _lr*(-2.0*error*bt[im][it]) + btu[iu] * 0.001;
+	mean -= _lr*(-2.0*error)/100;
 }
 
 
@@ -183,6 +189,8 @@ int main(int argc, char** argv)
 	vector<vector<int>> testset3;
 	float testscore;
 	float mintestscore = 0.95;
+	float moving_ave = 3.0;
+	float new_moving;
 	
 	srand(0);
 
@@ -195,6 +203,7 @@ int main(int argc, char** argv)
 	loadtestset(testfile,testset);
 	loadtestset(testfile2,testset2);
 	loadtestset(testfile3,testset3);
+	
 	for(int j = 0; j < 300; j++)	
 	{
 		for(int i = 0; i < 10000000; i ++)
@@ -203,6 +212,13 @@ int main(int argc, char** argv)
 		}
 		cout << compute_RMSE(abk,testset)<<endl;
 		testscore = compute_RMSE(abk,testset2); 
+		new_moving = moving_ave* 0.9 + testscore * 0.1;
+		if(new_moving >= moving_ave)
+		{
+			cout << "half lr" << endl;
+			abk.half_lr();
+		}
+		moving_ave = new_moving;
 		cout <<testscore << endl;
 		if(testscore < mintestscore) 
 		{

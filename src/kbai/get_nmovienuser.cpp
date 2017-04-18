@@ -5,9 +5,9 @@ int main()
 	vector<int> uuser(NUSER,0);
 	vector<int> umovie(NMOVIE,0);
 	vector<int> u(4,0);
-	ifstream infile("./all.dta");
-	ofstream userfile("./userfile.dta");
-	ofstream moviefile("./moviefile.dta");
+	ifstream infile(std::string(DATAPATH)+"/all.dta");
+	ofstream userfile(std::string(DATAPATH)+"/userfile.dta");
+	ofstream moviefile(std::string(DATAPATH)+"/moviefile.dta");
 	while(!infile.eof())
 	{
 		infile >> u[0] >> u[1] >> u[2] >>

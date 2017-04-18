@@ -1,9 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <stdlib.h>
-#include <numeric>
+#include "commonheader.h"
 
 
 using namespace std;
@@ -37,13 +32,13 @@ int main()
 	int averagetime = 0;
 	int idx = -1;
 	bool training;
-	ifstream infile("../data/all.dta");
-	ifstream idfile("../data/all.idx");
+	ifstream infile(std::string(DATAPATH)+"all.dta");
+	ifstream idfile(std::string(DATAPATH)+"all.idx");
 	ofstream outfile[5];
 	string filename;
 	for(int i = 1; i < 6; i++)
 	{
-		filename = "../data/" + std::to_string(i) + ".dta";
+		filename = std::string(DATAPATH) + std::to_string(i) + ".dta";
 		
 		outfile[i-1].open(filename);
 	}
