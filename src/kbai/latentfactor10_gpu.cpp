@@ -1,10 +1,12 @@
 #include "commonheader.h"
 #include <cstdlib>
+#define NLAT 10 // number of latent factors
 
 using namespace std;
 #include "feature.hh"
 #include "bkmodel.hh"
 #include "bkmodel1.hh"
+#include "bkmodel_gpu.hh"
 #include "utils.hh"
 
 
@@ -28,7 +30,7 @@ int main(int argc, char** argv)
 
 	string outfilename = std::string(argv[1]);
 	float testscore;
-	float mintestscore = 0.92;
+	float mintestscore = 0.94;
 	float moving_ave = 3.0;
 	float new_moving;
 	
@@ -38,14 +40,16 @@ int main(int argc, char** argv)
 	ifstream testfile(std::string(DATAPATH)+"2.dta");
 	ifstream testfile2(std::string(DATAPATH)+"4.dta");
 	ifstream testfile3(std::string(DATAPATH)+"5.dta");
-	bkmodel abk;
+	bkmodel_gpu abk;
+	cout << "111"<< endl;
 	feature fset(infile);  //training set , donot load data, use streaming mode
-	feature tset1(testfile,true); // testsets do load data
-	feature tset2(testfile2,true);
-	feature tset3(testfile3,true);
+	feature tset1(testfile); // testsets do load data
+	feature tset2(testfile2);
+	feature tset3(testfile3);
 //	cout << abk.bst[2][2][2] << endl;
+	abk.test();
 	
-	
+/*	
 	for(int j = 0; j < 300; j++)	
 	{
 
@@ -65,12 +69,12 @@ int main(int argc, char** argv)
 			abk.half_lr();
 		}
 		moving_ave = new_moving;
-		cout <<testscore << "minscore"<< mintestscore<<endl;
+		cout <<testscore << endl;
 		if(testscore < mintestscore) 
 		{
 			mintestscore = testscore;
 			tset3.compute_QUAL(abk,outfilename);
 			cout << "score recorded!"<< endl;
 		}
-	}
+	}*/
 }

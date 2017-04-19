@@ -1,12 +1,12 @@
 struct bkmodel;
 struct feature
 {
-	int iu;
-	int im;
-	int it;
-	int rate;
-	bool loadall;
-	vector<vector<int>> testset;
+	int _iu;
+	int _im;
+	int _it;
+	int _rate;
+	bool _loadall;
+	vector<vector<int>> _testset;
 	ifstream & _ifile;
 	feature(ifstream& a);
 	feature(ifstream& a, bool b);

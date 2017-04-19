@@ -1,6 +1,6 @@
 #include "commonheader.h"
 #include <cstdlib>
-#define NLAT 20
+#define NLAT 100
 
 using namespace std;
 

@@ -3,58 +3,71 @@ using namespace std;
 #include "feature.hh"
 #include "bkmodel.hh"
 
-feature::feature(ifstream &a):_ifile(a),loadall(false)
+feature::feature(ifstream &a):_ifile(a),_loadall(false)
 {}
 
-feature::feature(ifstream &a, bool b):_ifile(a),loadall(b)
+feature::feature(ifstream &a, bool b):_ifile(a),_loadall(b)
 {
-	if(loadall) load_alldata();
+	if(_loadall) load_alldata();
+	srand(0);
 }
 
 
 void feature::retrieve_feature()
 {
 	int a;
-	if(!(_ifile >> iu  >> im  >> it >> a>> rate))
+	if(_loadall)
 	{
-		cout << "here is the end" << endl;
-		_ifile.clear();
-		_ifile.seekg(0,ios::beg);// if read fails go to beginning
-		_ifile >> iu  >> im  >> it >> a>> rate;
+		int i = rand()%_testset.size();
+		_iu = _testset[i][0];
+		_im = _testset[i][1];
+		_it = _testset[i][2];
+		a = _testset[i][3];
+		_rate = _testset[i][4];
+	}
+	else // streaming mode
+	{
+		if(!(_ifile >> _iu  >> _im  >> _it >> a>> _rate))
+		{
+			cout << "here is the end" << endl;
+			_ifile.clear();
+			_ifile.seekg(0,ios::beg);// if read fails go to beginning
+			_ifile >> _iu  >> _im  >> _it >> a>> _rate;
+		}
 	}
 }
 
 void feature::load_alldata()
 {
-	loadall = true;
+	_loadall = true;
 	vector<int> data(5,0);
 	_ifile.clear();
 	_ifile.seekg(0,ios::beg); 
 	while(_ifile>>data[0]>>data[1]>>data[2]>>data[3]>>data[4])
 	{
-		testset.push_back(data);
+		_testset.push_back(data);
 	}
-	cout << testset.size() << endl;
+	cout << _testset.size() << endl;
 }
 
 
 double feature::compute_RMSE(bkmodel &bk)
 {
-	if(!loadall)
+	if(!_loadall)
 	{
 		cout << "cannot compute RMSE" << endl;
 		return -1.0;
 	}
-	int im,iu,rate,it;
-	int n = testset.size();
+	int _im,_iu,_rate,_it;
+	int n = _testset.size();
 	double rmse = 0.0;
-	for(auto & p: testset)
+	for(auto & p: _testset)
 	{
-		iu = p[0]-1;
-		im = p[1]-1;
-		it = p[2];
-		rate = p[4];
-		rmse +=pow( (bk.g(iu,im,it) - rate),2.0)/n;
+		_iu = p[0]-1;
+		_im = p[1]-1;
+		_it = p[2];
+		_rate = p[4];
+		rmse +=pow( (bk.g(_iu,_im,_it) - _rate),2.0)/n;
 	}
 	rmse = sqrt(rmse);
 	return rmse;
@@ -63,22 +76,22 @@ double feature::compute_RMSE(bkmodel &bk)
 
 double feature::compute_QUAL(bkmodel &bk, string ofilename)
 {
-	if(!loadall)
+	if(!_loadall)
 	{
 		cout << "cannot compute RMSE" << endl;
 		return -1.0;
 	}
-	int im,it,iu,rate;
-	int n = testset.size();
+	int _im,_it,_iu,_rate;
+	int n = _testset.size();
 	double rmse = 0.0;
 	ofstream qual(ofilename);
-	for(auto & p: testset)
+	for(auto & p: _testset)
 	{
-		iu = p[0]-1;
-		im = p[1]-1;
-		it = p[2];
-		rate = p[4];
-		qual << bk.g(iu,im,it) << endl;
+		_iu = p[0]-1;
+		_im = p[1]-1;
+		_it = p[2];
+		_rate = p[4];
+		qual << bk.g(_iu,_im,_it) << endl;
 	}
 	rmse = sqrt(rmse);
 	qual.close();
