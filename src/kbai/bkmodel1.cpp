@@ -12,7 +12,7 @@ bkmodel1::bkmodel1():bkmodel(),bst(NUSER,vector<vector<float>>(30,vector<float>(
 
 }
 
-float bkmodel1::g(int iu, int im, int it)
+float bkmodel1::g(int iu, int im, int it, int ife, float tt)
 {
 //	cout << "bkmodel1" << endl;
 	float gv = 0.0;
@@ -30,7 +30,7 @@ void bkmodel1::update_param_sgd(feature &a)
 	int im = a._im -1;
 	int it = a._it;
 	int rate = a._rate;
-	float error = -g(iu,im,it) + rate ;
+	float error = -g(iu,im,it,0,0.0) + rate ;
 
 	bu[iu] -= _lr*(-2.0*error);
 	bm[im] -= _lr*(-2.0*error);
@@ -45,15 +45,15 @@ void bkmodel1::update_param_sgd(feature &a)
 //		{
 		pu[iu][i] -= _lr*(-2.0*error*(pm[im][i]) + 2.0*pu[iu][i] *(0.0753211 + 3.11288/uuser[iu]));
 
-		bst[iu][it][i]  -= 0.1*_lr*(-2.0*error*pm[im][i] + 2.0*bst[iu][it][i]*( 0.00753211 + 0.311288/uuser[iu])) ;
+		bst[iu][it][i]  -= _lr*(-2.0*error*pm[im][i] + 2.0*bst[iu][it][i]*(0.00753211 + 0.311288/uuser[iu]*10)) ;
 //		}
 
 
 	}
 	btm[im][it] -= _lr*(-2.0*error*btu[iu]+ btm[im][it] * 0.0001);
 	btu[iu] -= _lr*(-2.0*error*btm[im][it] + btu[iu] * 0.001);
-	bt[it] -= _lr*(-2.0*error);
-	mean -= _lr*(-2.0*error)/100;
+	bt[it] -= _lr*(-2.0*error)/100;
+	mean -= _lr*(-2.0*error)/1000;
 }
 
 

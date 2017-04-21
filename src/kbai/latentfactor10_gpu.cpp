@@ -1,6 +1,5 @@
 #include "commonheader.h"
 #include <cstdlib>
-#define NLAT 10 // number of latent factors
 
 using namespace std;
 #include "feature.hh"
@@ -41,40 +40,38 @@ int main(int argc, char** argv)
 	ifstream testfile2(std::string(DATAPATH)+"4.dta");
 	ifstream testfile3(std::string(DATAPATH)+"5.dta");
 	bkmodel_gpu abk;
+	float bestscore = 0.91;
+	float currentscore=1.5;
 	cout << "111"<< endl;
-	feature fset(infile);  //training set , donot load data, use streaming mode
-	feature tset1(testfile); // testsets do load data
-	feature tset2(testfile2);
-	feature tset3(testfile3);
-//	cout << abk.bst[2][2][2] << endl;
-	abk.test();
-	
-/*	
-	for(int j = 0; j < 300; j++)	
+	feature fset(infile,true);  //training set , donot load data, use streaming mode
+	feature tset1(testfile,true); // testsets do load data
+	feature tset2(testfile2,true);
+	feature tset3(testfile3,true);
+	fset.load_gpu();
+	tset1.load_gpu();
+	tset2.load_gpu();
+
+	cout << tset1.compute_RMSE(abk) <<endl;
+
+
+	abk.loaddata(fset,tset1,tset2);
+	float lr = 0.01;
+	for(int i = 0 ; i < 300; i++)
 	{
-
-		for(int i = 0; i < 10000000; i ++)
+		abk.test(lr);
+		currentscore = abk.compute_error();
+		lr *=0.95;
+		cout << "learning rate:" << lr << endl;
+		if(currentscore <= bestscore)
 		{
-			abk.alternating = !abk.alternating;
-			abk.update_param_sgd(fset);
-		}
-		cout << tset1.compute_RMSE(abk) <<endl;
-
-		testscore = tset2.compute_RMSE(abk); 
-
-		new_moving = moving_ave* 0.9 + testscore * 0.1;
-		if(new_moving >= moving_ave)
-		{
-			cout << "half lr" << endl;
-			abk.half_lr();
-		}
-		moving_ave = new_moving;
-		cout <<testscore << endl;
-		if(testscore < mintestscore) 
-		{
-			mintestscore = testscore;
+			abk.retrieve_gpu();
+			cout <<tset1.compute_RMSE(abk) << endl;
+			cout <<tset2.compute_RMSE(abk) << endl;
 			tset3.compute_QUAL(abk,outfilename);
-			cout << "score recorded!"<< endl;
+			bestscore = currentscore;
 		}
-	}*/
+
+	}
+
+
 }

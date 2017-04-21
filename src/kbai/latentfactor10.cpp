@@ -53,6 +53,8 @@ int main(int argc, char** argv)
 		{
 			abk.alternating = !abk.alternating;
 			abk.update_param_sgd(fset);
+
+			cout << i << endl;
 		}
 		cout << tset1.compute_RMSE(abk) <<endl;
 

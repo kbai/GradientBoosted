@@ -14,7 +14,7 @@ void writedataintofile(int curr_user, vector<int>& imovie, vector<int> & itime, 
 
 	for(int i = 0 ; i < imovie.size(); i++)
 	{
-		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i]/75<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
+		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i]<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
 	}
 }
 
