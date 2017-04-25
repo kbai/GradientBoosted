@@ -8,8 +8,8 @@ using namespace std;
 A Linear System Solver based on LUP decomposition
 
 Solve: Ax = b
-input: A, n*n  dimensional vector
-	   b, n dimensional vector
+input:  A, n*n  dimensional vector
+        b, n dimensional vector
 return: x, n dimensional vector
 
 
