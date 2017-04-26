@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <fstream>
+#include <string>
+#include <iostream>
+
+main ( int argc, char **argv ) {
+     int a,b,c,d;
+     int old_b = 1;
+     int old_a = 1;
+     
+     double sum = 0.0;
+     double counter = 0.0;
+     double movies[17771];
+     double users[458294];
+     std::ifstream infile("mu/all.dta");
+     std::ifstream otherfile("um/all.dta");
+     std::ifstream outputfile("mu/qual.dta");
+     while(infile >> a >> b >> c >> d)
+     {
+     	if (b == old_b)
+     	{
+     		if(d != 0)
+     		{		
+	     		sum += d;
+	     		counter += 1;	
+     		} 
+     	}
+     	else
+     	{
+     		printf("%d\n", b);
+     		movies[old_b] = sum/counter;
+     		sum = d;
+     		counter = 1;
+               old_b = b;
+     	}
+
+     }
+     sum = 0;
+     counter = 0;
+     while(otherfile >> a >> b >> c >> d)
+     {
+     	if (a == old_a)
+     	{
+     		if(d != 0)
+     		{		
+	     		sum += d;
+	     		counter += 1;	
+     		} 
+     	}
+          else
+          {
+               printf("%d\n", a);
+               users[old_a] = sum/counter;
+               sum = d;
+               counter = 1;
+               old_a = a;
+          }
+
+     }
+     std::ofstream myfile ("first_try.dta");
+     while(outputfile >> a >> b >> c)
+     {    
+          myfile << (users[a] + movies[b]) / 2.0 << "\n";
+     }
+     
+
+     return 0; // Indicates that everything went well.
+}
