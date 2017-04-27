@@ -1,0 +1,8 @@
+#! /bin/bash
+bn=`basename $PWD`
+
+# total number of nodes is the product of the values read
+numnodes=50
+
+qsub  -N $bn -q gpu  -v pd=`pwd` -l nodes=30:ppn=1 -l walltime=72:00:00 ./go_solver_lsf.bash  
+
