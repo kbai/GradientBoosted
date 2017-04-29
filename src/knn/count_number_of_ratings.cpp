@@ -2,9 +2,10 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+using namespace std;
 
 main ( int argc, char **argv ) {
-     int a,b,c,d;
+     int a,b,c,d, e;
      int old_b = 1;
      int old_a = 1;
      
@@ -15,11 +16,12 @@ main ( int argc, char **argv ) {
      std::ifstream infile("../../data/1.dta");
 //     std::ifstream outputfile("../../qual.dta");
      
-     while(infile >> a >> b >> c >> d)
+
+     while(infile >> a >> b >> c >> d >> e)
      {
-          printf("%i\n", a);
+          cout << a << endl;
           users[a] += 1;
-          
+
      }
      printf("%i\n", users[1]);
 
