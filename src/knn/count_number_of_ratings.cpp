@@ -5,9 +5,8 @@
 using namespace std;
 
 main ( int argc, char **argv ) {
-     int a,b,c,d, e;
-     int old_b = 1;
-     int old_a = 1;
+     int a,b,c,d,e;
+
      
      // double sum = 0.0;
      // double counter = 0.0;
