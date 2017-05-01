@@ -45,8 +45,8 @@ vector<int> get_top_q_users (int q) {
 
 int main(int argc, char const *argv[])
 {
-     vector <int> a = get_top_q_users(200);
-     for (int i = 0; i < 200; i++)
+     vector <int> a = get_top_q_users(10);
+     for (int i = 0; i < 10; i++)
      cout << a[i] << "\n";
 
      return 0;

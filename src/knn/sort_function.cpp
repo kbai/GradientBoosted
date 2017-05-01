@@ -14,9 +14,9 @@ bool sortcol(const vector<int>& v1, const vector<int>& v2)
 }
 
 int main ( int argc, char **argv ) {
-     int a,b,c,d;
-     int old_b = 1;
-     int old_a = 1;
+     int a,b;
+     //int old_b = 1;
+     //int old_a = 1;
      
      // double sum = 0.0;
      // double counter = 0.0;
@@ -29,7 +29,7 @@ int main ( int argc, char **argv ) {
      vector <int> temp;
      while(infile >> a >> b)
      {
-          printf("%i\n", a);
+          //printf("%i\n", a);
           temp.push_back(a);
           temp.push_back(b);
           user_count.push_back(temp);
