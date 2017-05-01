@@ -5,7 +5,9 @@ struct bkmodel_gpu: bkmodel
 	float* d_pm;
 	float* d_pu;
 	float* d_pu1;
+	float* d_ptu;
 	float* d_bt;
+	float* d_bta;
 	float* d_btu;
 	float* d_btm;
 	float* d_bf;
@@ -39,7 +41,7 @@ struct bkmodel_gpu: bkmodel
 	void test(float lr);
 	void retrieve_gpu();
 	void loaddata(feature &a, feature &a1, feature &a2);
-	float compute_error();
+	double compute_error();
 	virtual float g(int a,int b,int c,int d,float e){return bkmodel::g(a,b,c,d,e);};
 	virtual  void update_param_sgd(feature &a){return;};
 	virtual ~bkmodel_gpu(){};

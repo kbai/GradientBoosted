@@ -21,6 +21,8 @@ public:
   void gibbs_hvh(int*,vector<int>&, double*, int*, double*, int*);
   void reconstruct(vector<int>&, vector<int>&, vector<double>&);
   void reconstruct(vector<int>&, vector<int>&, vector<int>&, vector<double>&);
+  void reconstruct(vector<int>&, vector<int>&, vector<int>&,vector<int>&, vector<double>&);
+
 
 };
 

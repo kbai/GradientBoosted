@@ -6,11 +6,14 @@ struct feature
 	int _it;
 	int _if;
 	int _rate;
+	int _ita;
 	float _tb;
+	float* residue;
 
 	vector<int> viu;
 	vector<int> vim;
 	vector<int> vit;
+	vector<int> vita;
 	vector<int> vif;
 	vector<int> vrate;
 	vector<float> vtb;
@@ -26,7 +29,7 @@ struct feature
 	void load_gpu();
 	double compute_RMSE(bkmodel &bk);
 	double compute_QUAL(bkmodel &bk, string ofilename);
-
+    void compute_residue(bkmodel &abk);
 };
 
 

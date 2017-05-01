@@ -128,7 +128,7 @@ RBM::RBM(int size, int n_v, int n_h, double **w, double *hb, double *vb) {
     double a = 1.0 / n_visible;
 
     for(int i=0; i<n_hidden; i++) {
-      for(int j=0; j<n_visible; j++) {
+      for(int j=0; j<5*n_visible; j++) {
         W[i][j] = uniform(-a, a);
 #ifdef MPIU
 		dW[i][j] = 0.0;
@@ -166,8 +166,8 @@ RBM::RBM(int size, int n_v, int n_h, double **w, double *hb, double *vb) {
   if(vb == NULL) {
     vbias = new double[5*n_visible];
 #ifdef MPIU
-	dv = new double[n_visible];
-	sv = new double[n_visible];
+	dv = new double[5*n_visible];
+	sv = new double[5*n_visible];
 #endif
     for(int i=0; i< 5 * n_visible; i++) {vbias[i] = 0;
 #ifdef MPIU
@@ -404,7 +404,7 @@ void load_all_data(
 				vector<int>& uid_test)
 {
 	ifstream traindat("../../data/1.dta");
-	ifstream testdat("../../data/2.dta");
+	ifstream testdat("../../data/4.dta");
 	vector<int> a;
 	vector<int> b;
 	vector<int> tmp(5,0);
@@ -444,7 +444,7 @@ void load_all_data(
 			a.clear();
 			b.clear();
 			iu = tmp[0];
-			cout << iu << endl;
+			//cout << iu << endl;
 		}
 		for(int f = 1; f< 6; f++) a.push_back(tmp[4] == f); //push into the array a 5d vector
 		b.push_back(tmp[1]-1);
@@ -482,7 +482,7 @@ void test_rbm() {
 	int iu = 0;
 //	int len = trainset.size();
 	int len = train_N;
-    	 cout <<compute_loss(trainuid,testuid,trainset,train_index,testset,test_index,rbm) << endl;
+    	 cout <<"error" << compute_loss(trainuid,testuid,trainset,train_index,testset,test_index,rbm) << endl;
 	
 	for(int iepo = 0 ; iepo < 30; iepo++)
 	{
@@ -496,7 +496,7 @@ void test_rbm() {
 		rbm.mpigath();
 #endif
 		}
-    	 cout <<compute_loss(trainuid,testuid,trainset,train_index,testset,test_index,rbm) << endl;
+    	 cout<<"error:" <<compute_loss(trainuid,testuid,trainset,train_index,testset,test_index,rbm) << endl;
 //	cout <<compute_loss_train(trainset,train_index,rbm) << endl;
 
 		 learning_rate *= 0.97;

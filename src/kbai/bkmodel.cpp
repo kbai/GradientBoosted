@@ -8,8 +8,8 @@ using namespace std;
 
 float u(float a)
 {
-	if(a>0) return pow(a,0.4);
-	else return -pow(abs(a),0.4);
+	if(a>0) return 0.0363636*pow(a,0.4);
+	else return -0.0363636*pow(abs(a),0.4);
 }
 
 bkmodel::bkmodel(): 
@@ -20,11 +20,12 @@ bkmodel::bkmodel():
 	pu(NUSER,vector<float>(NLAT,0)), 
 	pm(NMOVIE,vector<float>(NLAT,0)), // 50 latent factors
 	pu1(NUSER,vector<float>(NLAT,0.0)),
-
 	btm(NMOVIE,vector<float>(30,0)),
 	btu(NUSER,0),
 	bt(30,0),
 	bf(8,0),
+	bta(NDAY,0),
+	ptu(NUSER*30,vector<float>(NLAT,0)),
 //	pfm(NMOVIE,vector<vector<float>>(8,vector<float>(NLAT,0)))
 	bfm(NMOVIE,vector<float>(8,0))
 {
@@ -34,7 +35,9 @@ bkmodel::bkmodel():
 	for(auto &i : pu) for(auto &j : i)  j = 1.0*rand()/RAND_MAX/NLAT; // initialization of latent factors
 	for(auto &i : pm) for(auto &j : i)  j = 1.0*rand()/RAND_MAX/NLAT;
 	//mean = rand()*1.0/RAND_MAX;
-	mean = 3.6086089;
+	for(auto &i : btm) for(auto &j : i) j = 0.01*rand()/RAND_MAX/NLAT;
+	for(auto &i : btu) i = 0.01*rand()/RAND_MAX/NLAT;
+	mean = MEAN;
 	ifstream userfile(std::string(DATAPATH)+"/userfile.dta");
 	ifstream moviefile(std::string(DATAPATH)+"/moviefile.dta");
 	for(int &i : uuser) userfile >>i;
@@ -51,12 +54,13 @@ void bkmodel::half_lr()
 	_lr *= 0.5;
 }
 
-float bkmodel::g(int iu, int im, int it, int ife,float tt)
+float bkmodel::g(int iu, int im, int ita, int ife,float tt)
 {
 	float gv = 0.0;
+	int it = (int)(ita/75);
 	vector<float> tmp(NLAT,0);
-	for(int i = 0 ; i < NLAT;i++) tmp[i] = pu[iu][i]+pu1[iu][i]*u(tt);
-	gv = mean + bu[iu] + bm[im] + dotprod(tmp,pm[im])  + btm[im][it]*btu[iu] + bt[it] + bf[ife]+bfm[im][ife];
+	for(int i = 0 ; i < NLAT;i++) tmp[i] = pu[iu][i]+pu1[iu][i]*u(tt)+ptu[iu*30+it][i];
+	gv = mean + bu[iu] + bm[im] + dotprod(tmp,pm[im])  + btm[im][it]*btu[iu] + bt[it] + bta[ita] + bf[ife] + bfm[im][ife];
 	return gv;
 }
 
@@ -65,12 +69,13 @@ void bkmodel::update_param_sgd(feature &a)
 	a.retrieve_feature();
 	int iu = a._iu -1;
 	int im = a._im -1;
+	int ita = a._ita -1;
 	int it = a._it;
 	int ife = a._if;
 	int rate = a._rate;
 	float tt = a._tb;
 	float gamma = 0.0785714;
-	float error = -g(iu,im,it,ife,tt) + rate ;
+	float error = -g(iu,im,ita,ife,tt) + rate ;
 	float tmp1,tmp2,tmp3;
 
 	bu[iu] -= _lr*(-2.0*error); //no need to regulating thses terms

@@ -11,9 +11,16 @@ using namespace std;
 #define d_pm(i,j) d_pm[NLAT*i+j]
 #define d_pu(i,j) d_pu[NLAT*i +j]
 #define d_pu1(i,j) d_pu1[NLAT*i+j]
+#define d_ptu(i,j) d_ptu[NLAT*i+j]
 #define d_btm(i,j) d_btm[30*i+j]
 #define d_bfm(i,j) d_bfm[8*i+j]
-#define NDATA 94362234
+#define PUT_FUNCTION_G \
+	for(int i = 0 ; i < NLAT;i++)	\
+	{\
+		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt + d_ptu( (30 * iu + it),i ));\
+	};\
+	error -= MEAN + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bta[ita] + d_bf[ife]+d_bfm(im,ife);
+
 
 #define gpuErrchk(ans,i) { gpuAssert((ans), i, __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, int i, const char *file, int line, bool abort=true)
@@ -25,11 +32,24 @@ inline void gpuAssert(cudaError_t code, int i, const char *file, int line, bool 
 							     }
 }
 
+__device__ double atomicAdd(double* address, double val)
+{
+	    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+
+		    unsigned long long int old = *address_as_ull, assumed;
+
+			    do{ assumed = old;
+							old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val +__longlong_as_double(assumed)));
+							    } while (assumed != old);
+
+				    return __longlong_as_double(old);
+}
+
 
 __device__ float ug(float a)
 {
-	if(a>0) return pow((double)a,0.4);
-	else return -pow((double)abs(a),0.4);
+	if(a>0) return 0.0363636*pow((double)a,0.4);
+	else return -0.0363636*pow((double)abs(a),0.4);
 
 }
 __global__ void kernel_sgd(
@@ -39,9 +59,11 @@ __global__ void kernel_sgd(
  	float*d_pm,
  	float*d_pu,
  	float*d_pu1,
+	float*d_ptu,
  	float*d_btu,
  	float*d_bf,
  	float*d_bt,
+	float*d_bta,
  	float*d_bfm,
 	float*d_btm,
 	//data
@@ -56,46 +78,62 @@ __global__ void kernel_sgd(
 	int sz
 	)
 {
-	int ith =( shift + threadIdx.x + blockIdx.x * blockDim.x ) % sz;
+	int ith =( shift + threadIdx.x + blockIdx.x * blockDim.x );
+	while(ith < sz)
+	{
 	
 	int iu = du[ith];
 	int im = dm[ith];
-	int it = dt[ith];
+	int it = (int)(dt[ith]/75);
+	int ita = dt[ith];
 	int ife = df[ith];
-//	printf("%d\n",ith);
+//	printf("gpu:%d\t%d\t%d\t%d\t%d\n",iu,im,it,ita,ife);
 	float tt =ug(dtt[ith]);
 	int ir = rate[ith];
+	float tmp;
 	float error = (float)ir;
-	for(int i = 0 ; i < NLAT;i++)	
-	{
-		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt);
-	};
-//	printf("%d,%d,%d,%d\n",iu,im,it,ife);
+	PUT_FUNCTION_G
 
+	tmp =_lr*(error - 0.008*d_bu[iu]); //no need to regulating thses terms
+	atomicAdd(&d_bu[iu],tmp);
 
-	error -= 3.6086089 + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bf[ife]+d_bfm(im,ife);
-//	printf("error: %f\n",error);
+	tmp =_lr*(error - 0.008*d_bm[im]);
+	atomicAdd(&d_bm[im],tmp);
 
-	d_bu[iu] -= _lr*(-2.0*error); //no need to regulating thses terms
-	d_bm[im] -= _lr*(-2.0*error);
 
 	for(int i = 0; i < NLAT; i++)
 	{
-		d_pm(im,i) -= _lr*(-2.0*error*(d_pu(iu,i)+d_pu1(iu,i)*tt)) ;
-		d_pu(iu,i) -= _lr*(-2.0*error*(d_pm(im,i)));
-		d_pu1(iu,i) -=0.001*_lr*(-2.0*error*tt*d_pm(im,i));//		}
-		d_pm(im,i) *=(1-0.00001);//weight decay
-		d_pu(iu,i) *=(1-0.00001);
-		d_pu1(iu,i) *=(1-0.00001);
+		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt + d_ptu((iu*30+it),i)) - 0.015 * d_pm(im,i)) ;
+		atomicAdd(&(d_pm(im,i)),tmp);
+
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
+		atomicAdd(&(d_pu(iu,i)),tmp);
+
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_ptu((iu*30 + it),i));
+//		atomicAdd(&(d_ptu((iu*30 + it) , i)),tmp);
+
+
+		tmp = 0.1*_lr*(error*tt*d_pm(im,i) - 0.15*d_pu1(iu,i));//		}
+		atomicAdd(&(d_pu1(iu,i)),tmp);
 
 	}
-	d_btm(im,it) -= _lr*(-2.0*error*d_btu[iu]);
-	d_btu[iu] -= _lr*(-2.0*error*d_btm(im,it));
-	d_btm(im,it) *= (1-0.00001);
-	d_bu[iu] *= (1-0.00001);
-	d_bt[it] -= _lr*(-2.0*error);
-	d_bf[ife] -= _lr*(-2.0*error);
-	d_bfm(im,ife) -= _lr*(-2.0*error);
+	tmp = _lr*(error*d_btu[iu] - 0.015 * d_btm(im,it));
+	atomicAdd(&(d_btm(im,it)), tmp);
+	tmp = _lr*(error*d_btm(im,it) - 0.015* d_btu[iu]);
+	atomicAdd(&(d_btu[iu]), tmp);
+	tmp = 0.01*_lr*( error - 0.008 * d_bt[it]);
+	atomicAdd(&(d_bt[it]), tmp);
+	tmp = 0.01*_lr*(error - 0.008 * d_bf[ife]);
+	atomicAdd(&(d_bf[ife]), tmp);
+
+	tmp = _lr*(error - 0.008 * d_bfm(im,ife));
+	atomicAdd(&(d_bfm(im,ife)),tmp);
+	tmp = _lr*(error - 0.008 * d_bta[ita]);
+	atomicAdd(&(d_bta[ita]),tmp);
+	ith += blockDim.x * gridDim.x;
+	__syncthreads();
+}
+	
 //	atomicAdd(d_mean, 0.002*error);
 //
 
@@ -109,9 +147,11 @@ __global__ void kernel_rmse(
  	float*d_pm,
  	float*d_pu,
  	float*d_pu1,
+	float*d_ptu,
  	float*d_btu,
  	float*d_bf,
  	float*d_bt,
+	float*d_bta,
  	float*d_bfm,
 	float*d_btm,
 	//data
@@ -122,11 +162,9 @@ __global__ void kernel_rmse(
 	float*dtt,
 	int*rate,
 	int sz,
-	float *sum
+	double *sum
 	)
 {
-
-
 	int ith =( blockIdx.x * blockDim.x + threadIdx.x );
 	
 	while(ith < sz)
@@ -134,23 +172,18 @@ __global__ void kernel_rmse(
 
 		int iu = du[ith];
 		int im = dm[ith];
-		int it = dt[ith];
+		int it = (int)(dt[ith]/75);
+		int ita = dt[ith];
 		int ife = df[ith];
 //	printf("%d\n",ith);
 		float tt =ug(dtt[ith]);
 		int ir = rate[ith];
-		float error = (float)ir;
-		for(int i = 0 ; i < NLAT;i++)	
-		{
-			error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt);
-		};
-//	printf("%d,%d,%d,%d\n",iu,im,it,ife);
+		double error = (double)ir;
 
+		PUT_FUNCTION_G
+//		printf("gpu:%d\t %f\n",iu, error);
 
-		error -= 3.6086089 + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bf[ife]+d_bfm(im,ife);
-//	printf("error: %f\n",error);
-
-		atomicAdd(sum, 1.0*error*error);
+		atomicAdd(sum, (1.0*error*error));
 		ith += gridDim.x* blockDim.x;
 //
 	}
@@ -211,11 +244,13 @@ bkmodel_gpu::bkmodel_gpu():bkmodel()
 	copying_to_gpu1d(&d_bt,bt);
 	copying_to_gpu1d(&d_bf,bf);
 	copying_to_gpu1d(&d_bm,bm);
+	copying_to_gpu1d(&d_bta,bta);
 	copying_to_gpu2d(&d_pm,pm);
 	copying_to_gpu2d(&d_pu,pu);
 	copying_to_gpu2d(&d_pu1,pu1);
 	copying_to_gpu2d(&d_bfm, bfm);
 	copying_to_gpu2d(&d_btm, btm);
+	copying_to_gpu2d(&d_ptu, ptu);
 
 }
 void bkmodel_gpu::retrieve_gpu()
@@ -225,11 +260,13 @@ void bkmodel_gpu::retrieve_gpu()
 	copying_to_cpu1d(&d_bt,bt,1003);
 	copying_to_cpu1d(&d_bf,bf,1004);
 	copying_to_cpu1d(&d_bm,bm,1005);
+	copying_to_cpu1d(&d_bta,bta,1011);
 	copying_to_cpu2d(&d_pm,pm,1006);
 	copying_to_cpu2d(&d_pu,pu,1007);
 	copying_to_cpu2d(&d_pu1,pu1,1008);
 	copying_to_cpu2d(&d_bfm, bfm,1009);
 	copying_to_cpu2d(&d_btm, btm,1010);
+	copying_to_cpu2d(&d_ptu, ptu,1011);
 }
 
 void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
@@ -237,7 +274,7 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	sz0 = a0.viu.size();
 	copying_to_gpu1d(&d_iu,a0.viu);
 	copying_to_gpu1d(&d_im,a0.vim);
-	copying_to_gpu1d(&d_it,a0.vit);
+	copying_to_gpu1d(&d_it,a0.vita); //ita is from 1-2243
 	copying_to_gpu1d(&d_if,a0.vif);
 	copying_to_gpu1d(&d_tb,a0.vtb);
 	copying_to_gpu1d(&d_rate,a0.vrate);
@@ -245,7 +282,7 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	sz1 = a1.viu.size();
 	copying_to_gpu1d(&d_iu1,a1.viu);
 	copying_to_gpu1d(&d_im1,a1.vim);
-	copying_to_gpu1d(&d_it1,a1.vit);
+	copying_to_gpu1d(&d_it1,a1.vita);
 	copying_to_gpu1d(&d_if1,a1.vif);
 	copying_to_gpu1d(&d_tb1,a1.vtb);
 	copying_to_gpu1d(&d_rate1,a1.vrate);
@@ -253,21 +290,21 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	sz2 = a2.viu.size();
 	copying_to_gpu1d(&d_iu2,a2.viu);
 	copying_to_gpu1d(&d_im2,a2.vim);
-	copying_to_gpu1d(&d_it2,a2.vit);
+	copying_to_gpu1d(&d_it2,a2.vita);
 	copying_to_gpu1d(&d_if2,a2.vif);
 	copying_to_gpu1d(&d_tb2,a2.vtb);
 	copying_to_gpu1d(&d_rate2,a2.vrate);
 
 }
-float bkmodel_gpu::compute_error()
+double bkmodel_gpu::compute_error()
 {
-	float sum1 = 0, *dev_sum1;
-	cudaMalloc((void**) &dev_sum1,sizeof(float));
-	cudaMemcpy(dev_sum1, &sum1, sizeof(float), cudaMemcpyHostToDevice);
+	double sum1 = 0, *dev_sum1;
+	cudaMalloc((void**) &dev_sum1,sizeof(double));
+	cudaMemcpy(dev_sum1, &sum1, sizeof(double), cudaMemcpyHostToDevice);
 
-	float sum2 = 0, *dev_sum2;
-	cudaMalloc((void**) &dev_sum2,sizeof(int));
-	cudaMemcpy(dev_sum2, &sum2, sizeof(float), cudaMemcpyHostToDevice);
+	double sum2 = 0, *dev_sum2;
+	cudaMalloc((void**) &dev_sum2,sizeof(double));
+	cudaMemcpy(dev_sum2, &sum2, sizeof(double), cudaMemcpyHostToDevice);
 
 	kernel_rmse<<<32,32>>>(
 	//model
@@ -276,9 +313,11 @@ float bkmodel_gpu::compute_error()
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,
+	d_bta,
  	d_bfm,
  	d_btm,
 	//data
@@ -299,9 +338,11 @@ float bkmodel_gpu::compute_error()
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,
+	d_bta,
  	d_bfm,
  	d_btm,
 	//data
@@ -314,11 +355,11 @@ float bkmodel_gpu::compute_error()
 	sz2,
 	dev_sum2);
 	gpuErrchk(cudaPeekAtLastError(),400)
-	cudaMemcpy( &sum1, dev_sum1,sizeof(float),  cudaMemcpyDeviceToHost);
-	cudaMemcpy( &sum2, dev_sum2,sizeof(float),  cudaMemcpyDeviceToHost);
+	cudaMemcpy( &sum1, dev_sum1,sizeof(double),  cudaMemcpyDeviceToHost);
+	cudaMemcpy( &sum2, dev_sum2,sizeof(double),  cudaMemcpyDeviceToHost);
 	cout << "in sample error: " << sqrt(sum1/sz1) << endl;
 	cout << "out sample error: " <<sqrt(sum2/sz2) << endl;
-	float rmse = sqrt(sum2/sz2);
+	double rmse = sqrt(sum2/sz2);
 
 	return rmse;
 
@@ -327,8 +368,6 @@ float bkmodel_gpu::compute_error()
 
 void bkmodel_gpu::test(float lr)
 {
-	for(int c = 0 ; c<10000; c++)
-	{
 	kernel_sgd<<<32,32>>>(
 	//model
 	d_bu,
@@ -336,9 +375,11 @@ void bkmodel_gpu::test(float lr)
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,
+	d_bta,
  	d_bfm,
  	d_btm,
 	//data
@@ -349,11 +390,10 @@ void bkmodel_gpu::test(float lr)
 	d_tb,
 	d_rate,
 	lr,
-	beg,
+	0,
 	sz0);
 	gpuErrchk(cudaPeekAtLastError(),300);
 
-	beg= (beg+1024)%sz0;}
 
 
 /*	testgpu<<<16,16>>>(d_bm,d_bt);

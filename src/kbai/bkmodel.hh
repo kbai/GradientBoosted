@@ -1,4 +1,5 @@
-#define NLAT 100
+#define NLAT 200
+#define MEAN 3.6095162 
 struct bkmodel
 {
 	bool alternating;
@@ -9,7 +10,9 @@ struct bkmodel
 	vector<vector<float>> pm; // 50 latent factors
 	vector<vector<float>> pu;
 	vector<vector<float>> pu1;
+	vector<vector<float>> ptu;
 	vector<float> bt;
+	vector<float> bta;// time drifting term containing 2243 days
 	vector<float> btu;
 	vector<vector<float>> btm;
 	vector<float> bf;
