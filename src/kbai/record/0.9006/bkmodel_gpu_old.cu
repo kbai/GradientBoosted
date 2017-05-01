@@ -108,7 +108,7 @@ __global__ void kernel_sgd(
 		atomicAdd(&(d_pu(iu,i)),tmp);
 	//	tmp = 0.5*_lr*(error*tt*d_pm(im,i)-0.015*d_pu1(iu,i));//		}
 // step3 	
-		tmp = 0.75*_lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
+		tmp = _lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
 		atomicAdd(&(d_pu1(iu,i)),tmp);
 
 	}

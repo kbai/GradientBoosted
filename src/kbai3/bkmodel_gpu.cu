@@ -6,17 +6,18 @@ using namespace std;
 #include "feature.hh"
 #include "bkmodel.hh"
 #include <stdio.h>
-#include "bkmodel_gpu_old.hh"
+#include "bkmodel_gpu.hh"
 
 #define d_pm(i,j) d_pm[NLAT*i+j]
 #define d_pu(i,j) d_pu[NLAT*i +j]
 #define d_pu1(i,j) d_pu1[NLAT*i+j]
+#define d_ptu(i,j) d_ptu[NLAT*i+j]
 #define d_btm(i,j) d_btm[30*i+j]
 #define d_bfm(i,j) d_bfm[8*i+j]
 #define PUT_FUNCTION_G \
 	for(int i = 0 ; i < NLAT;i++)	\
 	{\
-		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt);\
+		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt + d_ptu( (30 * iu + it),i ));\
 	};\
 	error -= MEAN + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bta[ita] + d_bf[ife]+d_bfm(im,ife);
 
@@ -58,6 +59,7 @@ __global__ void kernel_sgd(
  	float*d_pm,
  	float*d_pu,
  	float*d_pu1,
+	float*d_ptu,
  	float*d_btu,
  	float*d_bf,
  	float*d_bt,
@@ -101,14 +103,17 @@ __global__ void kernel_sgd(
 
 	for(int i = 0; i < NLAT; i++)
 	{
-		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt) - 0.015 * d_pm(im,i)) ;
+		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt + d_ptu((iu*30+it),i)) - 0.015 * d_pm(im,i)) ;
 		atomicAdd(&(d_pm(im,i)),tmp);
 
-		tmp = _lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
 		atomicAdd(&(d_pu(iu,i)),tmp);
-	//	tmp = 0.5*_lr*(error*tt*d_pm(im,i)-0.015*d_pu1(iu,i));//		}
-// step3 	
-		tmp = 0.75*_lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
+
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_ptu((iu*30 + it),i));
+//		atomicAdd(&(d_ptu((iu*30 + it) , i)),tmp);
+
+
+		tmp = 0.1*_lr*(error*tt*d_pm(im,i) - 0.15*d_pu1(iu,i));//		}
 		atomicAdd(&(d_pu1(iu,i)),tmp);
 
 	}
@@ -116,7 +121,7 @@ __global__ void kernel_sgd(
 	atomicAdd(&(d_btm(im,it)), tmp);
 	tmp = _lr*(error*d_btm(im,it) - 0.015* d_btu[iu]);
 	atomicAdd(&(d_btu[iu]), tmp);
-	tmp = 0.1*_lr*( error - 0.008 * d_bt[it]);
+	tmp = 0.01*_lr*( error - 0.008 * d_bt[it]);
 	atomicAdd(&(d_bt[it]), tmp);
 	tmp = 0.01*_lr*(error - 0.008 * d_bf[ife]);
 	atomicAdd(&(d_bf[ife]), tmp);
@@ -142,6 +147,7 @@ __global__ void kernel_rmse(
  	float*d_pm,
  	float*d_pu,
  	float*d_pu1,
+	float*d_ptu,
  	float*d_btu,
  	float*d_bf,
  	float*d_bt,
@@ -244,6 +250,7 @@ bkmodel_gpu::bkmodel_gpu():bkmodel()
 	copying_to_gpu2d(&d_pu1,pu1);
 	copying_to_gpu2d(&d_bfm, bfm);
 	copying_to_gpu2d(&d_btm, btm);
+	copying_to_gpu2d(&d_ptu, ptu);
 
 }
 void bkmodel_gpu::retrieve_gpu()
@@ -259,6 +266,7 @@ void bkmodel_gpu::retrieve_gpu()
 	copying_to_cpu2d(&d_pu1,pu1,1008);
 	copying_to_cpu2d(&d_bfm, bfm,1009);
 	copying_to_cpu2d(&d_btm, btm,1010);
+	copying_to_cpu2d(&d_ptu, ptu,1011);
 }
 
 void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
@@ -305,6 +313,7 @@ double bkmodel_gpu::compute_error()
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,
@@ -329,6 +338,7 @@ double bkmodel_gpu::compute_error()
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,
@@ -365,6 +375,7 @@ void bkmodel_gpu::test(float lr)
  	d_pm,
  	d_pu,
  	d_pu1,
+	d_ptu,
  	d_btu,
  	d_bf,
  	d_bt,

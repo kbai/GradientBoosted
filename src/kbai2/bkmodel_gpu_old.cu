@@ -108,7 +108,7 @@ __global__ void kernel_sgd(
 		atomicAdd(&(d_pu(iu,i)),tmp);
 	//	tmp = 0.5*_lr*(error*tt*d_pm(im,i)-0.015*d_pu1(iu,i));//		}
 // step3 	
-		tmp = 0.75*_lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
+		tmp =1.0*_lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
 		atomicAdd(&(d_pu1(iu,i)),tmp);
 
 	}
@@ -118,7 +118,7 @@ __global__ void kernel_sgd(
 	atomicAdd(&(d_btu[iu]), tmp);
 	tmp = 0.1*_lr*( error - 0.008 * d_bt[it]);
 	atomicAdd(&(d_bt[it]), tmp);
-	tmp = 0.01*_lr*(error - 0.008 * d_bf[ife]);
+	tmp = 0.5*_lr*(error - 0.008 * d_bf[ife]);
 	atomicAdd(&(d_bf[ife]), tmp);
 
 	tmp = _lr*(error - 0.008 * d_bfm(im,ife));
