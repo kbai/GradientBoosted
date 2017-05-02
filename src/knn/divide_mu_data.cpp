@@ -15,14 +15,14 @@ using namespace std;
 
 void writedataintofile(int curr_movie, vector<int>& iuser, vector<int> & itime, vector<int> & irating, vector<int>& nrating,vector<ofstream*> & ostreams)
 {
-	int user;
-	int movie;
-	int rating;
+//	int user;
+//	int movie;
+//	int rating;
 	int avetime;
 	avetime = std::accumulate(itime.begin(),itime.end(),0.0)/itime.size();
 
 
-	for(int i = 0 ; i < iuser.size(); i++)
+	for(size_t i = 0 ; i < iuser.size(); i++)
 	{
 		(*ostreams[i]) << iuser[i] << "\t" << curr_movie << "\t" << itime[i]/75<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
 	}
@@ -39,9 +39,9 @@ int main()
 	vector<ofstream*> ostreams;
 	int curr_movie = 1;
 	int counter = 0;
-	int averagetime = 0;
+//	int averagetime = 0;
 	int idx = -1;
-	bool training;
+//	bool training;
 	ifstream infile(std::string(DATAPATH)+"all.dta");
 	ifstream idfile(std::string(DATAPATH)+"all.idx");
 	ofstream outfile[5];
@@ -78,10 +78,10 @@ int main()
 		//	if(curr_movie == 3) exit(0);
 		}
 //		cout << "ppp" << endl;
-		iuser.push_back(u[1]);
+		iuser.push_back(u[0]);
 		itime.push_back(u[2]);
 		irating.push_back(u[3]);
-		ostreams.push_back(&(outfile[idx-1]));
+		ostreams.push_back(&(outfile[idx - 1]));
 //		cout << u[2] << endl;
 		nrating[u[2] - 1] ++; // accumulating rating of a specific user at day u[2]
 		
