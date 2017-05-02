@@ -57,9 +57,9 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 				means[curr_user] /= nratings;
 
 				// Compute and store the standard deviation for the current user
-				// If only 1 rating, default the standard deviation to 1
+				// If only 1 rating, default the standard deviation to a uniform stdev
 				if (nratings == 1) {
-					stdev[curr_user] = 1;
+					stdev[curr_user] = 4 / sqrt(12);
 				}
 				else {
 					for (int i = 0; i < nratings; i++) {
@@ -92,6 +92,7 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 	vector<int> users;
 	ratings.clear();
 	nratings = 0;
+	vector<int> M(NUSER, 0);
 	while (!mufile.eof()) {
 		mufile >> u[0] >> u[1] >> u[2] >> u[3] >> u[4];
 		// Check all the users who have watched a movie, and then update correlations
@@ -105,12 +106,8 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 					if ((size_t) ind_i == j) {
 						for (int k = 0; k < nratings; k++) {
 							int ind_k = users[k] - 1;
-							if (corr[ind_k][j] == 0) {
-								corr[ind_k][j] += (ratings[k] - means[ind_k]) * (ratings[i] - means[ind_i]);
-							}
-							else {
-								corr[ind_k][j] = (corr[ind_k][j] + (ratings[k] - means[ind_k]) * (ratings[i] - means[ind_i])) / 2;
-							}
+							corr[ind_k][j] = (corr[ind_k][j] * M[ind_k] + (ratings[k] - means[ind_k]) * (ratings[i] - means[ind_i])) / (M[ind_k] + 1);
+							M[ind_k] += 1;
 						}
 					}
 				}
@@ -120,12 +117,18 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 			ratings.clear();
 			nratings = 0;
 			curr_movie += 1;
+
+			if (curr_movie % 100 == 0) {
+				cout << curr_movie << endl;
+			}
 		}
 
 		// Store all users who have watched a given movie
 		users.push_back(u[0]);
 		ratings.push_back(u[4]);
 		nratings += 1;
+
+
 
 	}
 
@@ -164,9 +167,30 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 
 }
 
+vector<int> get_top_q_users (int q) {
+     int a,b;
+     int total = 0;
+     vector<int> top_q_users;
+     std::ifstream infile("../../data/sorted_users.dta");
+
+     while(infile >> a >> b)
+     {
+          total += 1;
+          printf("%i\n", a);
+          top_q_users.push_back(a);
+          if (total == q)
+          {
+               break;
+          }
+          
+     }
+
+     return top_q_users; // Indicates that everything went well.
+}
+
+
 int main(int argc, char ** argv) {
-	vector<int> Q = {329190, 347500, 150431, 74145, 2488, 
-					 68106, 91750, 188481, 403529, 311810};
+	vector<int> Q = get_top_q_users(10);
 	create_user_correlation(Q, "1.dta", "tanger.dta");
 	return 0;
 }
