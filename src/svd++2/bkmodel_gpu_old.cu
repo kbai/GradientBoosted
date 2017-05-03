@@ -151,12 +151,12 @@ __global__ void kernel_sgd(
 		tmp = _lr * ETA_PU * (error * d_pm(im,i) -LAMBDA_PU * d_pu(iu,i));
 		atomicAdd(&(d_pu(iu,i)),tmp);
 
-		tmp = _lr * 0.1* ETA_PU * (error * d_pm(im,i) - LAMBDA_PU * d_ptu(itu,i/10));
-		atomicAdd(&(d_ptu(itu,i/10)),tmp);
+//		tmp = _lr * 0.1* ETA_PU * (error * d_pm(im,i) - LAMBDA_PU * d_ptu(itu,i/10));
+//		atomicAdd(&(d_ptu(itu,i/10)),tmp);
 
 
-		tmp = _lr * ETA_PU * (error*d_pm(im,i)*d_pu1(iu,i) - LAMBDA_PU * d_htu[itu])/NLAT;
-		atomicAdd(&(d_htu[itu]),tmp);
+//		tmp = _lr * ETA_PU * (error*d_pm(im,i)*d_pu1(iu,i) - LAMBDA_PU * d_htu[itu])/NLAT;
+//		atomicAdd(&(d_htu[itu]),tmp);
 
 
 		tmp = _lr * ETA_AL * (error*(tt + d_htu[itu])*d_pm(im,i) - LAMBDA_AL * d_pu1(iu,i));//		}

@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	
 	srand(0);
 
-	ifstream infile(std::string(DATAPATH)+"1RANDmap.dta");
+	ifstream infile(std::string(DATAPATH)+"1234RANDmap.dta");
 	ifstream testfile(std::string(DATAPATH)+"2map.dta");
 	ifstream testfile2(std::string(DATAPATH)+"4map.dta");
 	ifstream testfile3(std::string(DATAPATH)+"5map.dta");
