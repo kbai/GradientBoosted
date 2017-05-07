@@ -59,8 +59,10 @@ namespace utils {
   void sigmoid5(const double* x, double* y) {
 	double sum = 0.0;
 //	assert((x[0] > -10)&(x[0] < 10));
-	for(int ns = 0; ns < 5; ns++) sum += exp(x[ns]);
-	for(int ns = 0; ns < 5; ns++) y[ns] = exp(x[ns])/sum;
+	double a[5];
+	for(int ns = 0; ns < 5; ns++) a[ns] = exp(x[ns]);
+	for(int ns = 0; ns < 5; ns++) sum += a[ns];
+	for(int ns = 0; ns < 5; ns++) y[ns] = a[ns]/sum;
 //	cout << y[0] <<"\t "<< y[1]<<"\t " << y[2]<<"\t " << y[3]<<"\t " << y[4] <<"hehe"<< endl;
 //	cout << x[0] <<"\t"<< x[1] <<"\t"<< x[2]<<"\t" << x[3]<<"\t" << x[4] <<"hehe"<< endl;
   }

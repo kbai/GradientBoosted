@@ -8,4 +8,5 @@
 #define NUSER 458293
 #define NMOVIE 17770
 #define NLARGE 20000000
+#define NDAY 2243
 #define DATAPATH "../../data/"
