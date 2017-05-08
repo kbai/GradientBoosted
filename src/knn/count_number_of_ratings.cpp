@@ -4,9 +4,9 @@
 #include <iostream>
 using namespace std;
 
-int main ( int argc, char **argv ) {
-     int a,b,c,d, e;
-     
+main ( int argc, char **argv ) {
+     int a,b,c,d,e;
+  
      // double sum = 0.0;
      // double counter = 0.0;
      // double movies[17771];

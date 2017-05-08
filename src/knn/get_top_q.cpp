@@ -22,7 +22,7 @@ vector<int> get_top_q_users (int q) {
      while(infile >> a >> b)
      {
           total += 1;
-          printf("%i\n", a);
+         // / printf("%i\n", a);
           top_q_users.push_back(a);
           if (total == q)
           {
@@ -31,13 +31,6 @@ vector<int> get_top_q_users (int q) {
           
      }
 
-     // sort(user_count.begin(), user_count.end(), sortcol);
-
-     // std::ofstream myfile ("../../data/sorted_users.dta");
-     // for(int i = 0; i < 458293; i++)
-     // {    
-     //      myfile << user_count[i][0] << ' ' << user_count[i][1] << "\n";
-     // }
      
 
      return top_q_users; // Indicates that everything went well.

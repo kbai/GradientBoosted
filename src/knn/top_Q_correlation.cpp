@@ -21,7 +21,7 @@ using namespace std;
  */
 void create_user_correlation(vector<int>& ids, std::string data_file, std::string matrix_file) { 
 	cout << "Intializing..." << endl;
-	size_t Q = ids.size();
+	int Q = ids.size();
 	vector<float> means(NUSER, 0.0);
 	vector<float> stdev(NUSER, 0.0);
 

@@ -47,7 +47,11 @@ int main ( int argc, char **argv ) {
      printf("hi\n");
      while(infile >> a >> b >> c >> d >> e)
      {
+          if(a%50000 ==0)
+          {
           printf("%i\n", a);
+               
+          }
           for(int i = 0; i < q; i++)
           {
                if(a == top_q[i])
@@ -63,11 +67,19 @@ int main ( int argc, char **argv ) {
      printf("asdf\n");
      string line;
      std::vector<int> k_users(k);
-     vector<vector<int> > k_users_all(458293, vector<int>(k));
-     std::ifstream otherfile("../../data/richierozay.dta");
-     while(getline(otherfile, line)) {
-          int current_user = 1;
+     vector<vector<int> > k_users_all(458295, vector<int>(k));
+     std::ifstream otherfile("../../data/k_nearest_neighbors.dta");
+     int current_user = 1;
 
+     while(getline(otherfile, line)) {
+          
+
+        if (current_user % 50000 == 0) {
+            cout << "calculated " << current_user << " users" << endl;
+        }
+
+
+        
           istringstream iss(line);
           string word;
           int word_index = 0;
@@ -79,28 +91,31 @@ int main ( int argc, char **argv ) {
           {
                k_users_all[current_user][i] = k_users[i];
           }
+
+          current_user++;
      }
 
      
+     printf("hi there\n");
 
 
-     std::ifstream outputfile("mu/qual.dta");
+     std::ifstream outputfile("../../data/qual.dta");
 
      std::ofstream myfile ("first_try.dta");
      while(outputfile >> a >> b >> c)
      {   
-         int total = 0;
+         float total = 0;
          int counter = 0; 
          int user = a;
          int movie = b;
-         k_users = k_users_all[k];
-         for (int i; i < k; i++)
+         k_users = k_users_all[a];
+         for (int i = 0; i < k; i++)
          {
-               for (int j; j < movies_users_id[b].size(); j++)
+               for (int j = 0; j < movies_users_id[b].size(); j++)
                {
-                    if(k_users[i] == movies_users_id[b][i])
+                    if(k_users[i] == movies_users_id[b][j])
                     {
-                         total += movies_users_rating[b][i];
+                         total += movies_users_rating[b][j];
                          counter++;
                     }
                }
@@ -108,23 +123,31 @@ int main ( int argc, char **argv ) {
 
 
 
-
+         if(counter != 0)
+         {
           myfile << total/counter << "\n";
+         }
+         else
+         {
+          myfile << 3 << "\n";
+         }
+
+          
      }
 
 
 
 
 
-     // std::ofstream myfile ("../../data/user_movie_rating_matrix.dta");
-     // for(int i = 0; i < 17771; i++)
-     // {    myfile << "Movie " << i << ":    ";
-     //      for(int j = 0; j < movies_users_id[i].size(); j++)
-     //      {
-     //           myfile << "( " << movies_users_id[i][j] << ", " << movies_users_rating[i][j] << " ), ";     
-     //      }
-     //      myfile << "\n";
-     // }
+     std::ofstream mfile ("../../data/user_movie_rating_matrix.dta");
+     for(int i = 0; i < 17771; i++)
+     {    mfile << "Movie " << i << ":    ";
+          for(int j = 0; j < movies_users_id[i].size(); j++)
+          {
+               mfile << "( " << movies_users_id[i][j] << ", " << movies_users_rating[i][j] << " ), ";     
+          }
+          mfile << "\n";
+     }
      
 
      return 0; // Indicates that everything went well.
