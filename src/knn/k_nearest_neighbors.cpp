@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 
     cout << "Finding K-nearest neighbors" << endl;
     //int Q = atoi(argv[1]);    // desired "top" users
-    int Q = 10;
+    int Q = 1500;
     int K = 5;
     //int K = atoi(argv[2]);    // desired nearest neighbors
     // reading in to find Q top users

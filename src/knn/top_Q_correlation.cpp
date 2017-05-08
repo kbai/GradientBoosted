@@ -190,7 +190,7 @@ vector<int> get_top_q_users (int q) {
 
 
 int main(int argc, char ** argv) {
-	vector<int> Q = get_top_q_users(10);
+	vector<int> Q = get_top_q_users(1500);
 	create_user_correlation(Q, "1.dta", "tanger.dta");
 	return 0;
 }

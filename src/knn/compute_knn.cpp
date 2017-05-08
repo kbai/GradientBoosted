@@ -33,8 +33,8 @@ vector<int> get_top_q_users (int q) {
 
 int main ( int argc, char **argv ) {
      int a,b,c,d,e;
-     int q = 2000;
-     int k =100;
+     int q = 1500;
+     int k = 5;
      printf("hi\n");
      vector <int> top_q = get_top_q_users(q);
 
