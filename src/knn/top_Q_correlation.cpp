@@ -7,7 +7,7 @@
 #include <numeric>
 #include <math.h>
 #define NMOVIE 17770
-#define NUSER 458294
+#define NUSER 458293
 #define DATAPATH "../../data/"
 #define MUDATAPATH "../../data/mu/"
 #define TRAINFILE "3.dta"
