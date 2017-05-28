@@ -9,12 +9,10 @@ void writedataintofile(int curr_user, vector<int>& imovie, vector<int> & itime, 
 	int movie;
 	int rating;
 	int avetime;
-	avetime = std::accumulate(itime.begin(),itime.end(),0.0)/itime.size();
-
 
 	for(int i = 0 ; i < imovie.size(); i++)
 	{
-		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i]/75<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
+		(*ostreams[i]) << curr_user << "\t" << imovie[i] << "\t" << itime[i]<<"\t" << nrating[itime[i] - 1] <<"\t" << irating[i] << endl;
 	}
 }
 
