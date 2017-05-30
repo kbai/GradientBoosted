@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
         if (current % 100000 == 0) {
             cout << "generating qual " << current << endl;
         }
-        infile >> user >> movie >> time;
+        infile >> user >> movie >> time >> random_shit >> rating;
         xui = sqrt(time - min_time[user]) * float(num_user_ratings[user-1])/ float(num_user_ratings[user-1] + alpha);
         estimate = GLOBALMEAN + reg_coef_movie[user - 1] * movie_effect[movie - 1] + 
                     reg_coef_user[user - 1] * user_effect[user - 1];
