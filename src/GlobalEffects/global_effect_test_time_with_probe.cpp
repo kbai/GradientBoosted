@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
     }
 
 
-    ifstream infile("../../data/4bethere.dta");
+    ifstream infile("../../data/qual.dta");
     ofstream outfile("../../data/global_results_with_probe.dta");
     int current = 0;
     while (!infile.eof()) {
