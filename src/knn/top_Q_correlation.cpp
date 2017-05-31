@@ -52,6 +52,7 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 			if (nratings == 0) {
 				means[curr_user] = 3;
 				stdev[curr_user] = 1;
+
 			}
 			else {
 				means[curr_user] /= nratings;
