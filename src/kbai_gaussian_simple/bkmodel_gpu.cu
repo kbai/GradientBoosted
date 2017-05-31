@@ -109,8 +109,11 @@ __global__ void kernel_sgd(
 		tmp = 0.1*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
 		atomicAdd(&(d_pu(iu,i)),tmp);
 
-		tmp = 0.9*_lr*(error * d_pm(im,i) -0.015 * d_ptu(iu,it,i));
-		atomicAdd(&(d_ptu(iu,it,i)),tmp);
+		for(int jt = 0; jt < 30; jt++)
+		{
+			tmp = 0.9*_lr*(error * d_pm(im,i) -0.015 * d_ptu(iu,it,i))*exp(-0.5*(jt-it)*(jt-it));
+			atomicAdd(&(d_ptu(iu,jt,i)),tmp);
+		}
 
 
 		tmp = _lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}

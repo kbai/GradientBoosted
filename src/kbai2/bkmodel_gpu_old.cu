@@ -118,7 +118,7 @@ __global__ void kernel_sgd(
 	atomicAdd(&(d_btu[iu]), tmp);
 	tmp = 0.1*_lr*( error - 0.008 * d_bt[it]);
 	atomicAdd(&(d_bt[it]), tmp);
-	tmp = 0.5*_lr*(error - 0.008 * d_bf[ife]);
+	tmp = 0.1*_lr*(error - 0.008 * d_bf[ife]);
 	atomicAdd(&(d_bf[ife]), tmp);
 
 	tmp = _lr*(error - 0.008 * d_bfm(im,ife));
