@@ -1,0 +1,3 @@
+#!/sh  
+python gather_results.py ../../output_svdpp\(f\=50\)_train.dta ../../output_neighborhood_train.dta  ../FREQRBM/testrbmfreqcdf.dta  ../FREQRBM/testrbmfreq200.dta ../RBM/test.txt  ../svd++3/testtestsvd++3log676.dta  ../svd++3/testtestsvd++3400.dta ../svd++3/testtestsvd++3withhtu.dta  ../svd++3/testtestsvd++3biglrsmallregu.dta ../svd++3/testtestsvd++3withfreq.dta ../svd++2/testtest200_2.dta  ../../output_timefrequencybaseline_train.dta ../../output_timebaseline_train.dta  13
+#python gather_results.py  ../FREQRBM/testrbmfreqcdf_2.dta ../RBM/test.txt  ../svd++3/testtestsvd++3log676.dta    3
