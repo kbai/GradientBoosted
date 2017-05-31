@@ -11,13 +11,13 @@ using namespace std;
 #define d_pm(i,j) d_pm[NLAT*i+j]
 #define d_pu(i,j) d_pu[NLAT*i +j]
 #define d_pu1(i,j) d_pu1[NLAT*i+j]
-#define d_ptu(k,i,j) d_ptu[(k*30+i)*NLAT+j]
+#define d_ptu(i,j) d_ptu[NLAT*i+j]
 #define d_btm(i,j) d_btm[30*i+j]
 #define d_bfm(i,j) d_bfm[8*i+j]
 #define PUT_FUNCTION_G \
 	for(int i = 0 ; i < NLAT;i++)	\
 	{\
-		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt + d_ptu( iu,it,i ));\
+		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt + d_ptu( (30 * iu + it),i ));\
 	};\
 	error -= MEAN + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bta[ita] + d_bf[ife]+d_bfm(im,ife);
 
@@ -103,17 +103,17 @@ __global__ void kernel_sgd(
 
 	for(int i = 0; i < NLAT; i++)
 	{
-		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt + d_ptu(iu,it,i)) - 0.015 * d_pm(im,i)) ;
+		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt + d_ptu((iu*30+it),i)) - 0.015 * d_pm(im,i)) ;
 		atomicAdd(&(d_pm(im,i)),tmp);
 
-		tmp = 0.1*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
 		atomicAdd(&(d_pu(iu,i)),tmp);
 
-		tmp = 0.9*_lr*(error * d_pm(im,i) -0.015 * d_ptu(iu,it,i));
-		atomicAdd(&(d_ptu(iu,it,i)),tmp);
+		tmp = 0.5*_lr*(error * d_pm(im,i) -0.015 * d_ptu((iu*30 + it),i));
+//		atomicAdd(&(d_ptu((iu*30 + it) , i)),tmp);
 
 
-		tmp = _lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
+		tmp = 0.1*_lr*(error*tt*d_pm(im,i) - 0.15*d_pu1(iu,i));//		}
 		atomicAdd(&(d_pu1(iu,i)),tmp);
 
 	}
@@ -121,7 +121,7 @@ __global__ void kernel_sgd(
 	atomicAdd(&(d_btm(im,it)), tmp);
 	tmp = _lr*(error*d_btm(im,it) - 0.015* d_btu[iu]);
 	atomicAdd(&(d_btu[iu]), tmp);
-	tmp = 0.1*_lr*( error - 0.008 * d_bt[it]);
+	tmp = 0.01*_lr*( error - 0.008 * d_bt[it]);
 	atomicAdd(&(d_bt[it]), tmp);
 	tmp = 0.01*_lr*(error - 0.008 * d_bf[ife]);
 	atomicAdd(&(d_bf[ife]), tmp);
@@ -134,7 +134,8 @@ __global__ void kernel_sgd(
 	__syncthreads();
 }
 	
-//	atomicAdd(d_mean, 0./
+//	atomicAdd(d_mean, 0.002*error);
+//
 
 	return;
 }

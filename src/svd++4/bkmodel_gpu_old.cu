@@ -6,20 +6,52 @@ using namespace std;
 #include "feature.hh"
 #include "bkmodel.hh"
 #include <stdio.h>
-#include "bkmodel_gpu.hh"
+#include "bkmodel_gpu_old.hh"
 
 #define d_pm(i,j) d_pm[NLAT*i+j]
 #define d_pu(i,j) d_pu[NLAT*i +j]
 #define d_pu1(i,j) d_pu1[NLAT*i+j]
-#define d_ptu(k,i,j) d_ptu[(k*30+i)*NLAT+j]
+#define d_ptu(i,j) d_ptu[NLARGE*(int)(j)+i]
 #define d_btm(i,j) d_btm[30*i+j]
 #define d_bfm(i,j) d_bfm[8*i+j]
+#define d_sumy(i,j) d_sumy[NUSER*j+i]
+#define d_sumyg(i,j) d_sumyg[NUSER*j+i]
+#define d_y(i,j) d_y[NMOVIE*j+i]
+#define d_pmf(i,j,k) d_pmf[((k)*NMOVIE+(i))*8 +(j) ]
+#define ETA_BU 0.00267
+#define LAMBDA_BU 0.0255
+#define ETA_BUT 0.00257
+#define LAMBDA_BUT 0.00231
+#define ETA_AU 3.11e-6
+#define LAMBDA_AU 3.95
+#define ETA_BM 0.000488
+#define LAMBDA_BM 0.0255
+#define ETA_BMT 0.000115
+#define LAMBDA_BMT 0.0929
+#define ETA_CU 0.00564
+#define LAMBDA_CU 0.0476
+#define ETA_CUT 0.00103
+#define LAMBDA_CUT 0.019
+#define ETA_PU 0.008
+#define LAMBDA_PU 0.015
+#define ETA_PM 0.008
+#define LAMBDA_PM 0.015
+#define ETA_AL 1E-5
+#define LAMBDA_AL 50
+#define ETA_BMF 0.00236
+#define LAMBDA_BMF 1.1E-8
+#define ETA_PMF 2E-5
+#define LAMBDA_PMF 0.02
+#define ETA_Y 0.08
+#define LAMBDA_Y 0.0015
+
 #define PUT_FUNCTION_G \
 	for(int i = 0 ; i < NLAT;i++)	\
 	{\
-		error -= d_pm(im,i) * (d_pu(iu,i) + d_pu1(iu,i)* tt + d_ptu( iu,it,i ));\
+		error -= (d_pm(im,i) + d_pmf(im,ife,i)) * (d_pu(iu,i) + d_pu1(iu,i) * (tt+d_htu[itu])+ d_sumy(iu,i)/sqrtf((float)d_uu[iu]));\
 	};\
-	error -= MEAN + d_bu[iu] + d_bm[im]  + d_btm(im,it)*d_btu[iu] + d_bt[it] + d_bta[ita] + d_bf[ife]+d_bfm(im,ife);
+	error -= MEAN + d_au[iu]*tt + d_bu[iu] + d_but[itu] + (d_bm[im] + d_btm(im,it))*(d_btu[iu] + d_cut[itu])\
+		+ d_bt[it] + d_bta[ita] + d_bf[ife]+d_bfm(im,ife);
 
 
 #define gpuErrchk(ans,i) { gpuAssert((ans), i, __FILE__, __LINE__); }
@@ -48,13 +80,130 @@ __device__ double atomicAdd(double* address, double val)
 
 __device__ float ug(float a)
 {
-	if(a>0) return 0.0363636*pow((double)a,0.4);
-	else return -0.0363636*pow((double)abs(a),0.4);
+	if(a>0) return pow((double)a,0.4);
+	else return -pow((double)abs(a),0.4);
 
 }
+
+__global__ void kernel_set0(
+	//model
+	float*d_y,
+	int sz
+	)
+{
+	int ith =( threadIdx.x + blockIdx.x * blockDim.x );
+	while(ith < sz)
+	{
+		d_y[ith] = 0.0;
+		ith += blockDim.x * gridDim.x;
+
+	}
+	return;
+}
+
+__global__ void kernel_setint0(
+	//model
+	int*d_y,
+	int sz
+	)
+{
+	int ith =( threadIdx.x + blockIdx.x * blockDim.x );
+	while(ith < sz)
+	{
+		d_y[ith] = 0.0;
+		ith += blockDim.x * gridDim.x;
+
+	}
+	return;
+}
+__global__ void kernel_cc(
+	//model
+	int* d_uu,
+	int* d_mm,
+	//data
+	int*du,
+	int*dm,
+	int sz
+	)
+{
+	int ith =( threadIdx.x + blockIdx.x * blockDim.x );
+	while(ith < sz)
+	{
+	
+		int iu = du[ith];
+		int im = dm[ith];
+		atomicAdd(&(d_mm[im]), d_uu[iu]);//if a movie is watched by a user, then this movie will appear in all movie that the user has watched
+	
+		ith += blockDim.x * gridDim.x;
+		__syncthreads();
+	}
+}
+
+
+
+
+__global__ void kernel_sumy(
+	//model
+	float*d_y,
+	float*d_sumy,
+	//data
+	int*du,
+	int*dm,
+	int sz
+	)
+{
+	int ith =( threadIdx.x + blockIdx.x * blockDim.x );
+	while(ith < sz)
+	{
+	
+		int iu = du[ith];
+		int im = dm[ith];
+		for(int l = 0; l < NLAT; l++) atomicAdd(&d_sumy(iu,l),d_y(im,l));
+		ith += blockDim.x * gridDim.x;
+		__syncthreads();
+	}
+	return;
+}
+	
+__global__ void kernel_diffy(
+	//model
+	float*d_y,
+	float*d_sumyg,
+	int* d_uu,
+	int* d_mm,
+	//data
+	int*du,
+	int*dm,
+	float _lr,
+	int sz
+	)
+{
+	int ith =( threadIdx.x + blockIdx.x * blockDim.x );
+	float tmp;
+	while(ith < sz)
+	{
+	
+		int iu = du[ith];
+		int im = dm[ith];
+		for(int l = 0; l < NLAT; l++)
+		{
+//			if(d_sumyg(iu,l)> 1e6) printf("value sumyg too big!\n");
+			tmp = _lr * ETA_Y*( d_sumyg(iu,l) - LAMBDA_Y * d_y(im,l));
+			atomicAdd(&(d_y(im,l)), tmp/d_mm[im]);
+//			if(d_uu[iu] < 0.5 ) printf("gpu::%f\n",sqrtf(d_uu[iu]));
+//			if(d_y(im,l)> 1e6) printf("value yg too big!\n");
+
+		}
+	
+		ith += blockDim.x * gridDim.x;
+		__syncthreads();
+	}
+}
+
 __global__ void kernel_sgd(
 	//model
  	float*d_bu,
+	float*d_au,
  	float*d_bm,
  	float*d_pm,
  	float*d_pu,
@@ -66,12 +215,21 @@ __global__ void kernel_sgd(
 	float*d_bta,
  	float*d_bfm,
 	float*d_btm,
+	float*d_htu,
+	float*d_cut,
+	float*d_but,
+	float*d_pmf,
+	float*d_y,
+	float*d_sumy,
+	float*d_sumyg,
+	int* d_uu,
 	//data
 	int*du,
 	int*dm,
 	int*dt,
 	int*df,
 	float*dtt,
+	int*dtu,
 	int*rate,
 	float _lr,
 	int shift,
@@ -87,6 +245,7 @@ __global__ void kernel_sgd(
 	int it = (int)(dt[ith]/75);
 	int ita = dt[ith];
 	int ife = df[ith];
+	int itu = dtu[ith];
 //	printf("gpu:%d\t%d\t%d\t%d\t%d\n",iu,im,it,ita,ife);
 	float tt =ug(dtt[ith]);
 	int ir = rate[ith];
@@ -94,47 +253,80 @@ __global__ void kernel_sgd(
 	float error = (float)ir;
 	PUT_FUNCTION_G
 
-	tmp =_lr*(error - 0.008*d_bu[iu]); //no need to regulating thses terms
+	tmp = _lr * ETA_BU * (error - LAMBDA_BU * d_bu[iu]); //no need to regulating thses terms
 	atomicAdd(&d_bu[iu],tmp);
 
-	tmp =_lr*(error - 0.008*d_bm[im]);
+	tmp = _lr * ETA_AU * (error*tt - LAMBDA_AU * d_au[iu]);
+	atomicAdd(&d_au[iu],tmp);
+
+	tmp = _lr * ETA_BUT * (error - LAMBDA_BUT * d_but[itu]);
+	atomicAdd(&d_but[itu], tmp);
+
+	tmp = _lr * ETA_BM * (error * (d_btu[iu] + d_cut[itu]) - LAMBDA_BM * d_bm[im]);
 	atomicAdd(&d_bm[im],tmp);
 
+	tmp = _lr * ETA_BMT *(error * (d_btu[iu] + d_cut[iu]) - LAMBDA_BMT * d_btm(im,it));
+	atomicAdd(&(d_btm(im,it)), tmp);
+
+	tmp = _lr * ETA_CU *(error * (d_btm(im,it) + d_bm[im]) - LAMBDA_CU * (d_btu[iu] - 1));
+	atomicAdd(&(d_btu[iu]), tmp);
+
+	tmp = _lr * ETA_CUT *(error * (d_btm(im,it) + d_bm[im]) - LAMBDA_CUT * (d_cut[itu]));
+	atomicAdd(&(d_cut[itu]), tmp);
 
 	for(int i = 0; i < NLAT; i++)
 	{
-		tmp = _lr*(error * (d_pu(iu,i) + d_pu1(iu,i)*tt + d_ptu(iu,it,i)) - 0.015 * d_pm(im,i)) ;
+//		tmp = _lr * ETA_PM * (error * (d_pu(iu,i) + d_pu1(iu,i)*( tt + d_htu[itu] + d_ptu(itu,i/10) ) ) - LAMBDA_PM * d_pm(im,i)) ;
+		tmp = _lr * ETA_PM * (error * (d_pu(iu,i) + d_pu1(iu,i)*( tt + d_htu[itu] ) + d_sumy(iu,i)) - LAMBDA_PM * d_pm(im,i)) ;
+
 		atomicAdd(&(d_pm(im,i)),tmp);
 
-		tmp = 0.1*_lr*(error * d_pm(im,i) -0.015 * d_pu(iu,i));
+//		tmp = _lr * ETA_PMF * (error * (d_pu(iu,i) + d_pu1(iu,i)*( tt + d_htu[itu] + d_ptu(itu,i/10) ) ) - LAMBDA_PMF * d_pmf(im,ife,i)) ;
+		tmp = _lr * ETA_PMF * (error * (d_pu(iu,i) + d_pu1(iu,i)*( tt + d_htu[itu]) + d_sumy(iu,i)) - LAMBDA_PMF * d_pmf(im,ife,i)) ;
+
+		atomicAdd(&(d_pmf(im,ife,i)),tmp);
+
+
+		tmp = _lr * ETA_PU * (error * (d_pmf(im,ife,i) + d_pm(im,i)) -LAMBDA_PU * d_pu(iu,i));
 		atomicAdd(&(d_pu(iu,i)),tmp);
 
-		tmp = 0.9*_lr*(error * d_pm(im,i) -0.015 * d_ptu(iu,it,i));
-		atomicAdd(&(d_ptu(iu,it,i)),tmp);
+//		tmp = _lr * 0.1* ETA_PU * (error * (d_pm(im,i) + d_pmf(im,ife,i)) - LAMBDA_PU * d_ptu(itu,i/10));
+//		atomicAdd(&(d_ptu(itu,i/10)),tmp);
 
 
-		tmp = _lr*(error*tt*d_pm(im,i) - 0.015*d_pu1(iu,i));//		}
+		tmp = 10.00*_lr * ETA_PU * (error * (d_pm(im,i)+d_pmf(im,ife,i)) * d_pu1(iu,i) - LAMBDA_PU/10.0 * d_htu[itu])/NLAT;
+		atomicAdd(&(d_htu[itu]),tmp);
+
+
+		tmp = _lr * ETA_AL * (error*(tt + d_htu[itu])*(d_pmf(im,ife,i)+d_pm(im,i)) - LAMBDA_AL * d_pu1(iu,i));//		}
 		atomicAdd(&(d_pu1(iu,i)),tmp);
 
+		tmp = error * (d_pmf(im,ife,i) + d_pm(im,i))/sqrtf((float)d_uu[iu]); 
+		if(d_uu[iu] < 0.5) printf("error:%f\n",d_uu[iu]);
+		atomicAdd(&(d_sumyg(iu,i)),tmp);
+
+
 	}
-	tmp = _lr*(error*d_btu[iu] - 0.015 * d_btm(im,it));
-	atomicAdd(&(d_btm(im,it)), tmp);
-	tmp = _lr*(error*d_btm(im,it) - 0.015* d_btu[iu]);
-	atomicAdd(&(d_btu[iu]), tmp);
+
+/*
 	tmp = 0.1*_lr*( error - 0.008 * d_bt[it]);
 	atomicAdd(&(d_bt[it]), tmp);
 	tmp = 0.01*_lr*(error - 0.008 * d_bf[ife]);
 	atomicAdd(&(d_bf[ife]), tmp);
+*/
 
-	tmp = _lr*(error - 0.008 * d_bfm(im,ife));
+	tmp = _lr * ETA_BMF * (error - LAMBDA_BMF * d_bfm(im,ife));
 	atomicAdd(&(d_bfm(im,ife)),tmp);
+	/*
 	tmp = _lr*(error - 0.008 * d_bta[ita]);
 	atomicAdd(&(d_bta[ita]),tmp);
+*/
 	ith += blockDim.x * gridDim.x;
 	__syncthreads();
 }
 	
-//	atomicAdd(d_mean, 0./
+//	atomicAdd(d_mean, 0.002*error);
+//
 
 	return;
 }
@@ -142,6 +334,7 @@ __global__ void kernel_sgd(
 __global__ void kernel_rmse(
 	//model
  	float*d_bu,
+	float*d_au,
  	float*d_bm,
  	float*d_pm,
  	float*d_pu,
@@ -153,12 +346,21 @@ __global__ void kernel_rmse(
 	float*d_bta,
  	float*d_bfm,
 	float*d_btm,
+	float*d_htu,
+	float*d_cut,
+	float*d_but,
+	float*d_pmf,
+	float*d_y,
+	float*d_sumy,
+	float*d_sumyg,
+	int* d_uu,
 	//data
 	int*du,
 	int*dm,
 	int*dt,
 	int*df,
 	float*dtt,
+	int*dtu,
 	int*rate,
 	int sz,
 	double *sum
@@ -174,6 +376,7 @@ __global__ void kernel_rmse(
 		int it = (int)(dt[ith]/75);
 		int ita = dt[ith];
 		int ife = df[ith];
+		int itu = dtu[ith];
 //	printf("%d\n",ith);
 		float tt =ug(dtt[ith]);
 		int ir = rate[ith];
@@ -249,7 +452,17 @@ bkmodel_gpu::bkmodel_gpu():bkmodel()
 	copying_to_gpu2d(&d_pu1,pu1);
 	copying_to_gpu2d(&d_bfm, bfm);
 	copying_to_gpu2d(&d_btm, btm);
-	copying_to_gpu2d(&d_ptu, ptu);
+	copying_to_gpu1d(&d_htu, htu);
+//	copying_to_gpu2d(&d_ptu, ptu);
+	copying_to_gpu2d(&d_pmf, pmf);
+	copying_to_gpu1d(&d_au, au);
+	copying_to_gpu1d(&d_but, but);
+	copying_to_gpu1d(&d_cut, cut);
+	copying_to_gpu2d(&d_sumy,sumy);
+	copying_to_gpu2d(&d_sumyg,sumyg);
+	copying_to_gpu2d(&d_y, y);
+	copying_to_gpu1d(&d_uu, uuser);
+	copying_to_gpu1d(&d_mm, umovie);
 
 }
 void bkmodel_gpu::retrieve_gpu()
@@ -261,11 +474,20 @@ void bkmodel_gpu::retrieve_gpu()
 	copying_to_cpu1d(&d_bm,bm,1005);
 	copying_to_cpu1d(&d_bta,bta,1011);
 	copying_to_cpu2d(&d_pm,pm,1006);
+	copying_to_cpu2d(&d_pmf,pmf,1016);
 	copying_to_cpu2d(&d_pu,pu,1007);
 	copying_to_cpu2d(&d_pu1,pu1,1008);
 	copying_to_cpu2d(&d_bfm, bfm,1009);
 	copying_to_cpu2d(&d_btm, btm,1010);
-	copying_to_cpu2d(&d_ptu, ptu,1011);
+//	copying_to_cpu2d(&d_ptu, ptu,1013);
+	copying_to_cpu1d(&d_htu, htu,1011);
+	copying_to_cpu1d(&d_au, au, 1012);
+	copying_to_cpu1d(&d_but, but, 1014);
+	copying_to_cpu1d(&d_cut, cut, 1015);
+	copying_to_cpu2d(&d_sumy,sumy);
+	copying_to_cpu2d(&d_sumyg,sumyg);
+	copying_to_cpu2d(&d_y, y);
+	copying_to_cpu1d(&d_uu, uuser);
 }
 
 void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
@@ -277,6 +499,7 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	copying_to_gpu1d(&d_if,a0.vif);
 	copying_to_gpu1d(&d_tb,a0.vtb);
 	copying_to_gpu1d(&d_rate,a0.vrate);
+	copying_to_gpu1d(&d_tu, a0.vtut);
 
 	sz1 = a1.viu.size();
 	copying_to_gpu1d(&d_iu1,a1.viu);
@@ -285,6 +508,8 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	copying_to_gpu1d(&d_if1,a1.vif);
 	copying_to_gpu1d(&d_tb1,a1.vtb);
 	copying_to_gpu1d(&d_rate1,a1.vrate);
+	copying_to_gpu1d(&d_tu1, a1.vtut);
+
 
 	sz2 = a2.viu.size();
 	copying_to_gpu1d(&d_iu2,a2.viu);
@@ -293,6 +518,8 @@ void bkmodel_gpu::loaddata(feature &a0, feature &a1, feature &a2)
 	copying_to_gpu1d(&d_if2,a2.vif);
 	copying_to_gpu1d(&d_tb2,a2.vtb);
 	copying_to_gpu1d(&d_rate2,a2.vrate);
+	copying_to_gpu1d(&d_tu2, a2.vtut);
+
 
 }
 double bkmodel_gpu::compute_error()
@@ -308,6 +535,7 @@ double bkmodel_gpu::compute_error()
 	kernel_rmse<<<32,32>>>(
 	//model
 	d_bu,
+	d_au,
  	d_bm,
  	d_pm,
  	d_pu,
@@ -319,12 +547,21 @@ double bkmodel_gpu::compute_error()
 	d_bta,
  	d_bfm,
  	d_btm,
+	d_htu,
+	d_cut,
+	d_but,
+	d_pmf,
+	d_y,
+	d_sumy,
+	d_sumyg,
+	d_uu,
 	//data
 	d_iu1,
 	d_im1,
 	d_it1,
 	d_if1,
 	d_tb1,
+	d_tu1,
 	d_rate1,
 	sz1,
 	dev_sum1);
@@ -333,6 +570,7 @@ double bkmodel_gpu::compute_error()
 	kernel_rmse<<<32,32>>>(
 	//model
 	d_bu,
+	d_au,
  	d_bm,
  	d_pm,
  	d_pu,
@@ -344,12 +582,21 @@ double bkmodel_gpu::compute_error()
 	d_bta,
  	d_bfm,
  	d_btm,
+	d_htu,
+	d_cut,
+	d_but,
+	d_pmf,
+	d_y,
+	d_sumy,
+	d_sumyg,
+	d_uu,
 	//data
 	d_iu2,
 	d_im2,
 	d_it2,
 	d_if2,
 	d_tb2,
+	d_tu2,
 	d_rate2,
 	sz2,
 	dev_sum2);
@@ -365,11 +612,20 @@ double bkmodel_gpu::compute_error()
 
 }
 
-void bkmodel_gpu::test(float lr)
+void bkmodel_gpu::test(float lr1, float lr2)
 {
+//	kernel_setint0<<<32,32>>>(d_mm, NMOVIE);
+//	kernel_cc<<<32,32>>>(d_uu,d_mm,d_iu,d_im,sz0);
+	kernel_set0<<<32,32>>>(d_sumy, NUSER*NLAT);
+	gpuErrchk(cudaPeekAtLastError(),290);
+	kernel_set0<<<32,32>>>(d_sumyg, NUSER*NLAT);
+	gpuErrchk(cudaPeekAtLastError(),292);
+	kernel_sumy<<<32,32>>>(d_y,d_sumy,d_iu,d_im,sz0);
+	gpuErrchk(cudaPeekAtLastError(),295);
 	kernel_sgd<<<32,32>>>(
 	//model
 	d_bu,
+	d_au,
  	d_bm,
  	d_pm,
  	d_pu,
@@ -381,17 +637,36 @@ void bkmodel_gpu::test(float lr)
 	d_bta,
  	d_bfm,
  	d_btm,
+	d_htu,
+	d_cut,
+	d_but,
+	d_pmf,
+	d_y,
+	d_sumy,
+	d_sumyg,
+	d_uu,
 	//data
 	d_iu,
 	d_im,
 	d_it,
 	d_if,
 	d_tb,
+	d_tu,
 	d_rate,
-	lr,
+	lr1,
 	0,
 	sz0);
 	gpuErrchk(cudaPeekAtLastError(),300);
+	kernel_diffy<<<32,32>>>(
+	d_y,
+	d_sumyg,
+	d_uu,
+	d_mm,
+	d_iu,
+	d_im,
+	lr2,
+	sz0);
+	gpuErrchk(cudaPeekAtLastError(),330);
 
 
 
