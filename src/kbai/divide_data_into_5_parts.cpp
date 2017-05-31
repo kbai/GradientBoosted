@@ -25,6 +25,7 @@ int main()
 	vector<int> nrating(2243,0);
 	vector<int> u(4,0);
 	vector<ofstream*> ostreams;
+	srand(0);
 	int curr_user = 1;
 	int counter = 0;
 	int averagetime = 0;

@@ -4,8 +4,8 @@
 using namespace std;
 int main()
 {
-	ifstream ifile(std::string(DATAPATH)+"1.dta");
-	ofstream ofile(std::string(DATAPATH)+"1RAND.dta");
+	ifstream ifile(std::string(DATAPATH)+"1234.dta");
+	ofstream ofile(std::string(DATAPATH)+"1234RAND.dta");
 	vector<vector<int>> dataset;
 	vector<int> ent(5,0);
 	int i = 0;

@@ -48,10 +48,11 @@ void create_user_correlation(vector<int>& ids, std::string data_file, std::strin
 		// ID numbers are indexed starting at 1, subtract 1 to match 0 indexing in C++
 		while (u[0] - 1 > curr_user){
 			// If user has not rated any movies, default average is 3
-			// If no ratings, default the standard deviation to uniform stdev
+			// If no ratings, default the standard deviation to 1
 			if (nratings == 0) {
 				means[curr_user] = 3;
-				stdev[curr_user] = 4 / sqrt(12);
+				stdev[curr_user] = 1;
+
 			}
 			else {
 				means[curr_user] /= nratings;

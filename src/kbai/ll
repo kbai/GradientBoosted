@@ -1,0 +1,1 @@
+nvcc -gencode arch=compute_20,code=sm_20  -std=c++11  -c  bkmodel_gpu.cu
