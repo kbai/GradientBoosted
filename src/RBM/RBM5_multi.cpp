@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "utils.h"
 //#include <mutex>
-#define NUMTH 10
+#define NUMTH 100
 #include <thread>
 #include <mutex>
 using namespace std;
@@ -12,6 +12,7 @@ using namespace std;
 #ifdef MPIU
 #endif
 #include "RBM5.h"
+#define NLEN
 using namespace utils;
 
 std::mutex mtx;
@@ -28,9 +29,7 @@ double compute_loss_train(
 
 	for(int i = 0 ; i < train_index.size(); i++)
 	{
-//		cout << "cl1" << endl;
 		testrbm.reconstruct(train[i],train_index[i],reconstructed_X);
-//		cout << "cl2" << endl;
 		counter += train_index[i].size();
 		for(int j = 0; j < train_index[i].size(); j++)
 		{
@@ -40,91 +39,16 @@ double compute_loss_train(
 			{
 				score += ( ns + 1 )* (reconstructed_X[5*train_index[i][j]+ns]);
 				tscore += train[i][5*j+ns] * (ns+1);
-//				cout << 5*train_index[i][j] + ns << "  "<< 5*NMOVIE << endl;
 			}
-//			cout << score <<" : " << tscore << endl;
 			error += pow(score-tscore,2.0);
 		}
-//		cout << "cl3" << endl;
 
 	}
 	error /= counter;
 	error = sqrt(error);
 	return error;
 }
-/*
-double compute_loss_predict(	vector<int>&trainid,
-			vector<int>&userid,
-			vector<int>&quizid,
-			vector<vector<int>>&train,
-			vector<vector<int>>&train_index, 
-			vector<vector<int>>&test,
-			vector<vector<int>>& test_index,  
-			vector<vector<int>>&quiz,
-			vector<vector<int>>&quiz_index,
-			RBM& testrbm,
-			string& filename)
-{
-	vector<double> reconstructed_X(5*NMOVIE,0);
-	int counter = 0;
-	double error = 0;
-	vector<int> idmap;
-	vector<int> idmap2;
-	ifstream output(filename);
-	int j = 0;
-	for(auto i: userid)
-	{
-		while(trainid[j] < i) j++;
-		if(trainid[j] > i) 
-		{
-			cout << trainid[j-1]<<endl;
-			cout << trainid[j]<< endl;
-			cout << i << endl; 
-			exit(1);
-		}//some id in test set cannot be found in the training set. return an error;
-		idmap.push_back(j);
-	}
 
-	j = 0;
-
-	for(auto i: quizid)
-	{
-		while(trainid[j] < i) j++;
-		if(trainid[j] > i) 
-		{
-			cout << trainid[j-1]<<endl;
-			cout << trainid[j]<< endl;
-			cout << i << endl; 
-			exit(1);
-		}//some id in test set cannot be found in the training set. return an error;
-		idmap2.push_back(j);
-	}
-
-
-	for(int i = 0 ; i < test_index.size(); i++)
-	{
-//		assert((idmap[i] == i));
-//		assert((idmap[i] <= train.size()));
-		testrbm.reconstruct_and_predict(train[idmap[i]],train_index[idmap[i]],
-				test_index[i],reconstructed_X);
-		counter += test_index[i].size();
-		for(int j = 0; j < test_index[i].size(); j++)
-		{
-			double score = 0.0;
-			for(int ns = 0; ns < 5; ns++)
-			{
-				score += ( ns + 1 )* (reconstructed_X[5*test_index[i][j]+ns] - test[i][5*j+ns]);
-				output << reconstructed_X[5*test_index[i][j]+ns] <<"\t" ;
-			}
-			output << endl;
-			error += pow(score,2.0);
-		}
-	}
-	error /= counter;
-	error = sqrt(error);
-	return error;
-}
-*/
 double compute_loss(	vector<int>&trainid,
 			vector<int>&userid,
 			vector<vector<int>>&train,
@@ -155,8 +79,6 @@ double compute_loss(	vector<int>&trainid,
 
 	for(int i = 0 ; i < test_index.size(); i++)
 	{
-//		assert((idmap[i] == i));
-//		assert((idmap[i] <= train.size()));
 		testrbm.reconstruct(train[idmap[i]],train_index[idmap[i]],test_index[i],reconstructed_X);
 		counter += test_index[i].size();
 		for(int j = 0; j < test_index[i].size(); j++)
@@ -196,7 +118,7 @@ RBM::RBM(int size, int n_v, int n_h, double **w, double *hb, double *vb) {
     for(int i=0; i<n_hidden; i++)
 	{
 		try{
-		W[i] = (double*) malloc(5*sizeof(double)*n_visible);
+		W[i] = (double*) malloc(NLEN*sizeof(double)*n_visible);
 #ifdef MPIU
 		dW[i] = (double*) malloc(5*sizeof(double)*n_visible);
 		sW[i] = (double*) malloc(5*sizeof(double)*n_visible);
@@ -549,7 +471,7 @@ void load_all_data(
 				vector<vector<int>>& quiz_index,
 				vector<int>& uid_quiz)
 {
-	ifstream traindat("../../data/1.dta");
+	ifstream traindat("../../data/1234.dta");
 	ifstream testdat("../../data/4.dta");
 	ifstream testdata2("../../data/5.dta");
 	vector<int> a;
@@ -632,9 +554,9 @@ void load_all_data(
 void test_rbm(string& f1, string& f2) {
 	int test_N = 2;
 	int n_visible = NMOVIE;
-	int n_hidden = 300;
+	int n_hidden = 100;
 	int training_epochs = 10000;
-	int k = 1;
+	int k = 7;
 	vector<int> testuid, trainuid, quizuid;
 	vector<vector<int>> trainset,testset,train_index, test_index;
 	vector<vector<int>> quizset, quiz_index;
@@ -655,7 +577,7 @@ void test_rbm(string& f1, string& f2) {
 	
 	for(int iepo = 0 ; iepo < 30; iepo++)
 	{
-		k = k + 1;
+		
 		for(int y = 0 ; y < len; y+=NUMTH)
 		{
 		if(y%1000 == 0) cout << y << endl;

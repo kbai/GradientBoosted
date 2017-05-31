@@ -1,4 +1,4 @@
-#define NLAT 200
+#define NLAT 400
 #define MEAN 3.6095162 
 struct bkmodel
 {

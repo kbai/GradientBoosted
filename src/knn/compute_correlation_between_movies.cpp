@@ -43,7 +43,7 @@ int main()
 
 	
 	ifstream infile("../../data/1map.dta");
-	ifstream residf("../../data/residue1.txt");
+	ifstream residf("../../data/residue1_200.txt");
 	ifstream idfile("../../data/all.idx");
 
 //	ofstream outfile("correlationmatrixsparse.dta");
@@ -146,7 +146,7 @@ int main()
 		}
 	}	
 	vector<pair<int,float>> indecies(NMOVIE,std::make_pair(0,0.0));
-	ofstream opt("../../data/movie_neighbour_200_only500.txt");
+	ofstream opt("../../data/1svd200correlation.txt");
 	for(size_t i = 0 ; i < NMOVIE; i++)
 	{
 		for(size_t j=0; j < NMOVIE; j++)

@@ -6,6 +6,7 @@ struct bkmodel_gpu: bkmodel
 	float* d_pm;
 	float* d_pu;
 	float* d_pu1;
+	float* d_ptu;
 	float* d_bt;
 	float* d_bta;
 	float* d_btu;

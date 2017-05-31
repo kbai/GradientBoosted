@@ -391,11 +391,11 @@ void RBM::sample_v_given_h(const int *h0_sample,const vector<int>& imovie,double
 	int it  = imovie[10 * ir + 2];
 	int iu  = imovie[10 * ir + 1];
 	
-	for(int ns = 0; ns < 5; ns++)
-	{
+//	for(int ns = 0; ns < 5; ns++)
+//	{
 		propdown(h0_sample, im, vbias + 5 * im, bif + 5*( 30 * im + ife), but + 5* iut, bu+5*iu , mean + 5*ir);
 		binomial5( mean+5*ir, sample+5*ir);
-	}
+//	}
   }
 }
 
@@ -523,7 +523,7 @@ void load_all_data(
 				vector<vector<int>>& quiz_index,
 				vector<int>& uid_quiz)
 {
-	ifstream traindat("../../data/1map.dta");
+	ifstream traindat("../../data/1234map.dta");
 	ifstream testdat("../../data/4map.dta");
 	ifstream testdata2("../../data/5map.dta");
 	vector<int> a;
@@ -570,7 +570,7 @@ void load_all_data(
 void test_rbm(string& f1, string& f2) {
 	int test_N = 2;
 	int n_visible = NMOVIE;
-	int n_hidden = 200;
+	int n_hidden = 50;
 	int training_epochs = 10000;
 	int k = 7;
 	vector<int> testuid, trainuid, quizuid;

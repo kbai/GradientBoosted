@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <fstream>
 #include <vector>
 #include <string>
@@ -10,7 +9,7 @@
 #include <algorithm>
 #define NMOVIE 17770
 #define NB 5000
-#define UNB 100
+#define UNB 5000
 
 using namespace std;
 void intersect(vector<int> b, const vector<int> &a,const vector<float> &c ,vector<pair<int,float>>& inter)
@@ -80,9 +79,9 @@ int main()
 	ifstream residf("../../data/residue1.txt");
 	ifstream idfile("../../data/all.idx");
 	ifstream neighbour("../../data/movie_neighbour_200_only500.txt");
-	ifstream testset("../../data/5map.dta");
-	ifstream testr("../../data/residue1.txt");
-	ofstream output("knnpredict_withprobe.txt");
+	ifstream testset("../../data/4map.dta");
+	ifstream testr("../../data/residue4.txt");
+	ofstream output("knnpredict_test.txt");
 	float rmse = 0.0;
 	int ttct = 0;
 	float rmse1 = 0.0;
@@ -145,6 +144,12 @@ int main()
 					int currentmovie = tmovie[iii];
 					vector<pair<int,float>> inter;
 					intersect(imovies, neig[currentmovie-1],corr[currentmovie-1],inter);
+					std::sort(inter.begin(), inter.end(), [](pair<int,float>&a, pair<int,float>&b){return a.second > b.second;});
+
+					if(inter.size() > 30) inter.erase(inter.begin()+30,inter.end()); //keep at most 30 neighbours
+					//cout << inter.size() << endl;
+					sort(inter.begin(), inter.end(), [](pair<int,float>&a, pair<int,float>& b){
+							return a.first < b.first;});
 					//cout << inter.size() << endl;
 					auto p1 = imovies.begin();
 					auto p2 = inter.begin();

@@ -79,6 +79,7 @@ int main(int argc, char** argv)
 	abk.loaddata(fset,tset1,tset2);
 	float lr = 0.014;
 	clock_t begin = clock(),end;
+	float previous_score = 0.0;
 
 	for(int i = 0 ; i < 100; i++)
 	{
@@ -87,7 +88,9 @@ int main(int argc, char** argv)
 		abk.test(lr);
 		currentscore = abk.compute_error();
 //		cout <<"maximum tba:"<<*max_element(abk.bta.begin(),abk.bta.end())<<endl;
-		lr *=0.91;
+		lr*=0.91;
+//
+		//if(currentscore > previous_score) lr *=0.90;
 		cout << "learning rate:" << lr << endl;
 		if(currentscore <= bestscore)
 		{
@@ -96,7 +99,7 @@ int main(int argc, char** argv)
 			th1 = std::thread(output,std::ref(outfilename),std::ref(abk),std::ref(tset1),std::ref(tset2),std::ref(tset3));
 			bestscore = currentscore;
 		}
-		if(i%10 == 0)
+		if(i%20 == 0)
 		{
 			if(th1.joinable()) th1.join();
 			abk.retrieve_gpu();
@@ -104,6 +107,7 @@ int main(int argc, char** argv)
 		}
 		end = clock();
 		cout << "Elapsed time this iteration:" << (end-begin)/CLOCKS_PER_SEC <<" seconds"<< endl; 
+		previous_score =currentscore;
 
 	}
 }

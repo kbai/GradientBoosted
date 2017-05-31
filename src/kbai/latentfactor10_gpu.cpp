@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 	ifstream testfile2(std::string(DATAPATH)+"4.dta");
 	ifstream testfile3(std::string(DATAPATH)+"5.dta");
 	bkmodel_gpu abk;
-	float bestscore = 0.9005;
+	float bestscore = 0.500;
 	float currentscore=1.5;
 	cout << "111"<< endl;
 	feature fset(infile,true);  //training set , donot load data, use streaming mode
@@ -77,17 +77,17 @@ int main(int argc, char** argv)
 
 
 	abk.loaddata(fset,tset1,tset2);
-	float lr = 0.014;
+	float lr = 0.010;
 	clock_t begin = clock(),end;
 
-	for(int i = 0 ; i < 100; i++)
+	for(int i = 0 ; i < 300; i++)
 	{
 		begin = clock();
 
 		abk.test(lr);
 		currentscore = abk.compute_error();
 //		cout <<"maximum tba:"<<*max_element(abk.bta.begin(),abk.bta.end())<<endl;
-		lr *=0.91;
+		lr *=0.95;
 		cout << "learning rate:" << lr << endl;
 		if(currentscore <= bestscore)
 		{
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 			th1 = std::thread(output,std::ref(outfilename),std::ref(abk),std::ref(tset1),std::ref(tset2),std::ref(tset3));
 			bestscore = currentscore;
 		}
-		if(i%10 == 0)
+		if(i%20 == 0)
 		{
 			if(th1.joinable()) th1.join();
 			abk.retrieve_gpu();

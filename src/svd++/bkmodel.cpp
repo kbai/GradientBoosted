@@ -20,6 +20,7 @@ bkmodel::bkmodel():
 	au(NUSER,0),
 	pu(NUSER,vector<float>(NLAT,0)), 
 	pm(NMOVIE,vector<float>(NLAT,0)), // 50 latent factors
+	ptu(NLAT/10,vector<float>(NLARGE,0)),
 	pu1(NUSER,vector<float>(NLAT,0.0)),
 	btm(NMOVIE,vector<float>(30,0)),
 	btu(NUSER,0),
@@ -32,8 +33,8 @@ bkmodel::bkmodel():
 	bfm(NMOVIE,vector<float>(8,0))
 {
 	cout << "Number of latent factors" << NLAT << endl;
-	for(auto &i : bu)  i = 1.0*rand()/RAND_MAX;  //random initialization
-	for(auto &i : bm)  i = 1.0*rand()/RAND_MAX;  //random initialization
+//	for(auto &i : bu)  i = 1.0*rand()/RAND_MAX;  //random initialization
+//	for(auto &i : bm)  i = 1.0*rand()/RAND_MAX;  //random initialization
 	for(auto &i : pu) for(auto &j : i)  j = 1.0*rand()/RAND_MAX/NLAT; // initialization of latent factors
 	for(auto &i : pm) for(auto &j : i)  j = 1.0*rand()/RAND_MAX/NLAT;
 	//mean = rand()*1.0/RAND_MAX;
@@ -61,7 +62,7 @@ float bkmodel::g(int iu,int itu, int im, int ita, int ife,float tt)
 	float gv = 0.0;
 	int it = (int)(ita/75);
 	vector<float> tmp(NLAT,0);
-	for(int i = 0 ; i < NLAT;i++) tmp[i] = pu[iu][i]+pu1[iu][i]*(u(tt)+htu[iu]);//+ptu[iu*30+it][i];
+	for(int i = 0 ; i < NLAT;i++) tmp[i] = pu[iu][i]+pu1[iu][i]*(u(tt)+htu[iu])+ptu[i/10][itu];//+ptu[iu*30+it][i];
 	gv = mean + bu[iu]+ au[iu]*u(tt) + bm[im] + dotprod(tmp,pm[im])  + btm[im][it]*btu[iu] + bt[it] + bta[ita] + bf[ife] + bfm[im][ife];
 	return gv;
 }
