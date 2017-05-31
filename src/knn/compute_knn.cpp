@@ -33,8 +33,8 @@ vector<int> get_top_q_users (int q) {
 
 int main ( int argc, char **argv ) {
      int a,b,c,d,e;
-     int q = 1500;
-     int k = 100;
+     int q = 10;
+     int k = 5;
      printf("hi\n");
      vector <int> top_q = get_top_q_users(q);
 
@@ -67,7 +67,7 @@ int main ( int argc, char **argv ) {
      printf("asdf\n");
      string line;
      std::vector<int> k_users(k);
-     vector<vector<int> > k_users_all(458295, vector<int>(k));
+     vector<vector<int> > k_users_all(458294, vector<int>(k));
      std::ifstream otherfile("../../data/k_nearest_neighbors.dta");
      int current_user = 1;
 
@@ -89,7 +89,7 @@ int main ( int argc, char **argv ) {
           }
           for(int i = 0; i < k; i++)
           {
-               k_users_all[current_user][i] = k_users[i];
+               k_users_all[current_user-1][i] = k_users[i];
           }
 
           current_user++;
@@ -108,7 +108,7 @@ int main ( int argc, char **argv ) {
          int counter = 0; 
          int user = a;
          int movie = b;
-         k_users = k_users_all[a];
+         k_users = k_users_all[a-1];
          for (int i = 0; i < k; i++)
          {
                for (int j = 0; j < movies_users_id[b].size(); j++)
